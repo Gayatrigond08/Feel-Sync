@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="https://public-frontend-cos.metadl.com/mgx/img/favicon.png" type="image/png">
+    <title>Feel Sync - Your Mental Wellness Companion</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&family=Outfit:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-mountain-sun"></i>
+                <span>Feel Sync</span>
+            </div>
+
+            <div class="menu-toggle" id="mobile-menu">
+                <div class="streak-counter user-only" title="Your Wellness Streak">
+                    <i class="fas fa-fire"></i> <span id="streak-val">3</span>
+                </div>
+                <i class="fas fa-bars"></i>
+            </div>
+
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link">Home</a></li>
+                <li class="user-only"><a href="#mood-tracker" class="nav-link">Mood Tracker</a></li>
+                <li class="user-only"><a href="#journal" class="nav-link">Journal</a></li>
+                <li class="user-only"><a href="#ai-chat" class="nav-link">AI Support</a></li>
+                <li><a href="#resources" class="nav-link">Resources</a></li>
+                <li class="guest-only"><button id="login-btn" class="btn-primary">Login</button></li>
+                <li class="user-only"><button id="logout-btn" class="btn-secondary">Logout</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero section active">
+        <!-- Guest View: Simple & Clean -->
+        <div class="hero-content guest-only">
+            <h1>Your Journey to Wellness</h1>
+            <p>Embrace the peace within. Every step you take matters.</p>
+            <button id="get-started-btn" class="btn-hero">Get Started</button>
+        </div>
+
+        <!-- User View: Personalized Dashboard -->
+        <div class="hero-content user-only">
+            <h1 id="welcome-title">Hello ✨</h1>
+            <p id="hero-subtitle">How is your heart feeling today?</p>
+
+            <div class="quick-actions-grid">
+                <div class="action-card" onclick="window.location.hash='#mood-tracker'">
+                    <div class="action-icon">🌈</div>
+                    <span>How are you?</span>
+                </div>
+                <div class="action-card" onclick="window.location.hash='#ai-chat'">
+                    <div class="action-icon">✨</div>
+                    <span>Let's Talk</span>
+                </div>
+                <div class="action-card" onclick="window.location.hash='#resources'">
+                    <div class="action-icon">🧘</div>
+                    <span>Breath Work</span>
+                </div>
+            </div>
+
+            <div id="home-whisper-card" class="featured-card">
+                <div class="card-label">Whisper for You</div>
+                <p id="home-whisper-text">"The morning will come again..."</p>
+                <small id="home-whisper-meaning">— Song: Spring Day</small>
+            </div>
+        </div>
+
+        <!-- Ambient Particles (Subtle User Feature) -->
+        <div class="hero-visual user-only">
+            <div class="floating-elements" id="particle-container">
+                <div class="float-item">🌿</div>
+                <div class="float-item">💚</div>
+                <div class="float-item">🌟</div>
+                <div class="float-item">🌸</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mood Tracker Section -->
+    <section id="mood-tracker" class="section">
+        <div class="container">
+            <h2>Daily Mood Tracker</h2>
+            <div class="mood-tracker-card glass-card">
+                <div class="mood-input">
+                    <h3>How are you feeling today?</h3>
+                    <div class="mood-scale">
+                        <button class="mood-btn" data-mood="1">😢</button>
+                        <button class="mood-btn" data-mood="2">😕</button>
+                        <button class="mood-btn" data-mood="3">😐</button>
+                        <button class="mood-btn" data-mood="4">🙂</button>
+                        <button class="mood-btn" data-mood="5">😊</button>
+                    </div>
+                    <textarea id="mood-notes" placeholder="Add any notes about your mood..."></textarea>
+                    <button id="save-mood" class="btn-primary">Save Mood Entry</button>
+                </div>
+                <div class="mood-chart">
+                    <canvas id="moodChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Journal Section -->
+    <section id="journal" class="section">
+        <div class="container-fluid">
+            <h2>Your Wellness Journal</h2>
+            <div id="journal-container" class="journal-container">
+                <div class="journal-card">
+                    <p class="no-data">Log your mood to see your journal history here...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Chat Section -->
+    <section id="ai-chat" class="section">
+        <div class="container">
+            <h2>AI Mental Health Support</h2>
+            <div class="chat-container glass-card">
+                <div class="chat-header">
+                    <i class="fas fa-robot"></i>
+                    <span>MindBot - Your AI Companion</span>
+                </div>
+                <div id="chat-messages" class="chat-messages">
+                    <div class="message bot-message">
+                        <div class="message-content">
+                            Hello! I'm MindBot, your AI mental health companion. How can I support you today?
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="chat-input" placeholder="Type your message here...">
+                    <button id="send-message" class="btn-send">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Resources Section -->
+    <section id="resources" class="section">
+        <div class="container">
+            <h2>Wellness Resources</h2>
+            <div class="resources-grid glass-card">
+                <div class="resource-card">
+                    <i class="fas fa-meditation"></i>
+                    <h3>Meditation Guides</h3>
+                    <p>Guided meditation sessions for stress relief and mindfulness</p>
+                    <button class="btn-secondary">Explore</button>
+                </div>
+                <div class="resource-card">
+                    <i class="fas fa-dumbbell"></i>
+                    <h3>Exercise Plans</h3>
+                    <p>Physical activities designed to boost mental health</p>
+                    <button class="btn-secondary">Start</button>
+                </div>
+                <div class="resource-card">
+                    <i class="fas fa-book"></i>
+                    <h3>Self-Help Articles</h3>
+                    <p>Expert-written articles on mental health topics</p>
+                    <button class="btn-secondary">Read</button>
+                </div>
+                <div class="resource-card">
+                    <i class="fas fa-phone"></i>
+                    <h3>Crisis Support</h3>
+                    <p>24/7 crisis hotlines and emergency resources</p>
+                    <button class="btn-secondary">Access</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Welcome Back</h2>
+            <form id="login-form">
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit" class="btn-primary">Login</button>
+            </form>
+            <p>Don't have an account? <a href="#" id="show-register">Sign up</a></p>
+            <div
+                style="margin-top: 1rem; font-size: 0.8rem; color: #666; border-top: 1px solid #eee; padding-top: 0.8rem;">
+                <strong>Demo Login:</strong> demo@feelsync.com / password123
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="register-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Create Account</h2>
+            <form id="register-form">
+                <input type="text" id="reg-username" placeholder="Username" required>
+                <input type="email" id="reg-email" placeholder="Email" required>
+                <input type="password" id="reg-password" placeholder="Password" required>
+                <button type="submit" class="btn-primary">Sign Up</button>
+            </form>
+            <p>Already have an account? <a href="#" id="show-login">Login</a></p>
+        </div>
+    </div>
+
+    <!-- Breathing Modal -->
+    <div id="breathing-modal" class="modal wellness-modal">
+        <div class="modal-content hub-content">
+            <span class="close" onclick="document.getElementById('breathing-modal').style.display='none'">&times;</span>
+            <h2 style="text-align: center; margin: 1.5rem 0 0.5rem; color: #333;">Deep Breathing Space</h2>
+            <div id="breathing-app" class="hub-section active">
+                <div class="breathing-circle-container">
+                    <div class="breathing-circle" id="breath-circle"></div>
+                    <div class="breath-text" id="breath-text">Get Ready</div>
+                </div>
+                <button id="start-breathing" class="btn-primary">Start Exercise</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Zen Garden Modal -->
+    <div id="game-modal" class="modal wellness-modal">
+        <div class="modal-content hub-content">
+            <span class="close" id="close-game-modal">&times;</span>
+            <h2 style="text-align: center; margin: 1.5rem 0 0.5rem; color: #333;">Zen Garden Affirmations</h2>
+            <div id="game-app" class="hub-section active">
+                <p style="text-align: center;">Pop the bubbles to release positive affirmations!</p>
+                <div id="game-canvas" class="game-container">
+                    <!-- Bubbles will be generated here -->
+                </div>
+                <div class="game-score">Affirmations Found: <span id="score-val">0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Creative Journal Modal -->
+    <div id="journal-modal" class="modal wellness-modal">
+        <div class="modal-content hub-content">
+            <span class="close" onclick="document.getElementById('journal-modal').style.display='none'">&times;</span>
+            <h2 style="text-align: center; margin: 1.5rem 0 0.5rem; color: #333;">Expressive Arts Journal</h2>
+            <div id="creative-journal" class="hub-section active">
+                <div class="journal-prompt" id="daily-prompt">What's one thing that made you smile today?</div>
+                <div class="creative-options">
+                    <button class="btn-tag" data-emoji="🌟">Feeling Golden</button>
+                    <button class="btn-tag" data-emoji="🌿">Growing</button>
+                    <button class="btn-tag" data-emoji="🌊">Flowing</button>
+                    <button id="new-prompt" class="btn-secondary">New Prompt</button>
+                </div>
+                <textarea id="creative-notes" placeholder="Express yourself freely here..."></textarea>
+                <button id="save-creative" class="btn-primary">Save to Journal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mindful Nuggets Modal -->
+    <div id="empower-modal" class="modal wellness-modal">
+        <div class="modal-content hub-content">
+            <span class="close" id="close-empower-modal">&times;</span>
+            <h2 style="text-align: center; margin: 1.5rem 0 0.5rem; color: #333;">Soul Whispers</h2>
+            <div id="empower-app" class="hub-section active">
+                <div class="nugget-card">
+                    <div id="nugget-type" class="nugget-badge">Welcome</div>
+                    <div id="nugget-content" class="nugget-main-content">
+                        Your journey is unique and beautiful.
+                    </div>
+                    <div id="nugget-footer" class="nugget-meaning">
+                        Click below to receive a whisper of comfort or strength.
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 2rem;">
+                    <button id="next-nugget" class="btn-primary">New Whisper ✨</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Feel Sync. Your mental health matters.</p>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+                <a href="#">Contact</a>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

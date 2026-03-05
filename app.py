@@ -1,73 +1,83 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
-import mysql.connector
-from mysql.connector import Error
+import pymysql
+import pymysql.cursors
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import jwt
 from functools import wraps
 import openai
 from textblob import TextBlob
 import json
+from ai_chat import MentalHealthAI
+
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
+app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'default-secret-key')
 CORS(app)
 
-# OpenAI API configuration (replace with your API key)
-openai.api_key = os.getenv('OPENAI_API_KEY', 'your-openai-api-key-here')
+# OpenAI API configuration
+openai.api_key = os.getenv('OPENAI_API_KEY', '')
 
 # MySQL Database configuration
 DB_CONFIG = {
-    'host': 'localhost',
-    'database': 'wellmind_db',
-    'user': 'root',
-    'password': 'your-mysql-password'
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'database': os.getenv('DB_NAME', 'feel_sync_db'),
+    'user': os.getenv('DB_USER', 'root'),
+    'password': os.getenv('DB_PASSWORD', ''),
+    'port': int(os.getenv('DB_PORT', 3307))
 }
 
 class DatabaseManager:
     def __init__(self):
-        self.connection = None
+        # We will create connections per query to avoid thread-safety issues in Flask
+        pass
     
-    def connect(self):
+    def get_connection(self):
         try:
-            self.connection = mysql.connector.connect(**DB_CONFIG)
-            return self.connection
-        except Error as e:
-            print(f"Error connecting to MySQL: {e}")
+            return pymysql.connect(
+                **DB_CONFIG,
+                cursorclass=pymysql.cursors.DictCursor,
+                autocommit=True
+            )
+        except Exception as e:
+            print(f"Error connecting to MySQL with PyMySQL: {e}")
             return None
     
     def disconnect(self):
-        if self.connection and self.connection.is_connected():
-            self.connection.close()
+        # Kept for backward compatibility if called
+        pass
     
     def execute_query(self, query, params=None):
+        connection = self.get_connection()
+        if not connection:
+            return None
+            
         try:
-            if not self.connection or not self.connection.is_connected():
-                self.connect()
-            
-            cursor = self.connection.cursor(dictionary=True)
-            cursor.execute(query, params)
-            
-            if query.strip().upper().startswith('SELECT'):
-                result = cursor.fetchall()
-            else:
-                self.connection.commit()
-                result = cursor.lastrowid
-            
-            cursor.close()
-            return result
-        except Error as e:
+            with connection.cursor() as cursor:
+                cursor.execute(query, params)
+                
+                if query.strip().upper().startswith('SELECT'):
+                    result = cursor.fetchall()
+                else:
+                    result = cursor.lastrowid
+                
+                return result
+        except Exception as e:
             print(f"Database error: {e}")
             return None
+        finally:
+            connection.close()
 
 db = DatabaseManager()
 
 class AITherapist:
     def __init__(self):
         self.system_prompt = """
-        You are MindBot, a compassionate AI mental health companion. Your role is to:
+        You are MindBot, a compassionate AI mental health companion for the Feel Sync platform. Your role is to:
         1. Provide emotional support and active listening
         2. Offer evidence-based coping strategies
         3. Encourage professional help when needed
@@ -177,7 +187,11 @@ class AITherapist:
         
         What's on your mind today? I'm here to help however I can."""
 
-ai_therapist = AITherapist()
+ai_therapist = MentalHealthAI(os.getenv('OPENAI_API_KEY'))
+
+@app.route('/favicon.ico')
+def favicon():
+    return '', 204
 
 def token_required(f):
     @wraps(f)
@@ -257,7 +271,7 @@ def login():
         # Generate JWT token
         token = jwt.encode({
             'user_id': user[0]['id'],
-            'exp': datetime.utcnow() + timedelta(days=7)
+            'exp': datetime.now(timezone.utc) + timedelta(days=7)
         }, app.config['SECRET_KEY'], algorithm='HS256')
         
         return jsonify({
@@ -340,7 +354,8 @@ def chat_with_ai():
                 formatted_history.append({"role": role, "content": msg['content']})
         
         # Generate AI response
-        ai_response = ai_therapist.generate_response(user_message, formatted_history)
+        ai_result = ai_therapist.generate_personalized_response(user_message, formatted_history)
+        ai_response = ai_result['response']
         
         # Save conversation to database
         db.execute_query(
@@ -394,7 +409,26 @@ def get_user_analytics(user_id):
         print(f"Analytics error: {e}")
         return jsonify({'message': 'Internal server error'}), 500
 
+@app.route('/api/resources', methods=['GET'])
+def get_resources():
+    try:
+        category = request.args.get('category')
+        if category:
+            resources = db.execute_query(
+                "SELECT * FROM wellness_resources WHERE category = %s AND is_active = TRUE",
+                (category,)
+            )
+        else:
+            resources = db.execute_query(
+                "SELECT * FROM wellness_resources WHERE is_active = TRUE"
+            )
+        
+        return jsonify({'resources': resources or []}), 200
+        
+    except Exception as e:
+        print(f"Resources error: {e}")
+        return jsonify({'message': 'Internal server error'}), 500
+
 if __name__ == '__main__':
-    # Initialize database connection
-    db.connect()
+    # Database connections are now managed per-query
     app.run(debug=True, host='0.0.0.0', port=5000)

@@ -196,7 +196,7 @@ Please reach out to one of these resources right now. They're available 24/7 and
             }
         
         # Try to use OpenAI API if available
-        if self.api_key and self.api_key != 'your-openai-api-key-here':
+        if self.api_key and self.api_key != "your_openai_api_key_here":
             try:
                 ai_response = self.get_openai_response(user_message, user_history, sentiment_analysis, categories)
                 if ai_response:

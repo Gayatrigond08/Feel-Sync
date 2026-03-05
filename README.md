@@ -1,60 +1,78 @@
-# Well-Mind
+# Feel Sync 
 
-Well-Mind is an innovative project designed to enhance mental health and wellness through intelligent prompts and guided exercises. The repository brings together the latest in conversational AI and prompt engineering to help users manage stress, boost mindfulness, and support overall well-being.
+Feel Sync is a beautifully designed, intelligent mental wellness platform built to provide empathetic support, self-reflection, and mindfulness tools.
 
-## Features
+## ✨ Features
 
-- **Intelligent Prompt System:** Uses MGX prompt technology to generate personalized mental wellness exercises and reflections.
-- **Modular Design:** Easily extensible for new prompt types and mental health tools.
-- **Modern Stack:** Built with [frontend basic HTML,CSS Javascript, Python, MySQL open ai], making it easy to contribute and customize.
+- **MindBot AI Therapist:** Engage with a compassionate AI companion that actively listens, analyzes emotional sentiment using NLP, and provides tailored coping strategies and support. Includes built-in crisis detection protocols.
+- **Scrapbook Journal:** Log your daily mood and thoughts in a visually stunning horizontal "photo wall" layout. Your entries are playfully styled with washi tape, custom fonts, and cute emoji stickers, acting as a personal memory board.
+- **Mood Analytics & Tracking:** Track your mental state over time with visual analytics comparing your recent mood trends (30-day overview and 7-day rolling trends).
+- **Wellness Hub:** Access curated resources including guided breathing exercises (like the interactive 4-7-8 breathing circle) and mindful "Soul Whispers" for daily affirmations and grounding.
+- **Premium User Experience:** Features a modern, responsive, and animated user interface built with smooth gradients, floating glowing orbs, and clean glassmorphism components.
 
-## MGX Prompt Integration
+## 🛠️ Technology Stack
 
-A key highlight of Well-Mind is its use of the MGX prompt system. MGX prompts are designed to provide dynamic, context-aware guidance and reflection questions tailored to each user’s needs. By leveraging MGX, Well-Mind delivers a highly interactive, supportive experience for users seeking to improve their mental health.
+- **Frontend:** Vanilla HTML5, CSS3, and JavaScript (No heavy frameworks, highly optimized, and beautifully customized).
+- **Backend:** Python powered by Flask.
+- **Database:** MySQL.
+- **Authentication:** JWT (JSON Web Tokens) with secure password hashing via Werkzeug.
+- **AI / NLP:** OpenAI API for the conversational MindBot, and TextBlob for initial text-based sentiment analysis.
 
-> **Example MGX Prompt Usage:**
-> - "Describe a recent challenge and how you responded emotionally."
-> - "What is one thing you can do today to nurture your well-being?"
+## 🚀 Getting Started
 
-These prompts foster self-awareness, resilience, and positive habits.
+### Prerequisites
 
-## Getting Started
+1. Python 3.8 or higher
+2. MySQL Server (running on port 3307, or adjustable in `.env`)
+3. An OpenAI API Key
+
+### Installation
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/ryankoigi-dev/Well-Mind.git
+   git clone <your-github-repo-url>
+   cd Feel-Sync
    ```
 
-2. **Install dependencies:**
+2. **Setup virtual environment (recommended):**
+   ```bash
+   python -m venv venv
+   
+   # On Windows:
+   venv\Scripts\activate
+   
+   # On macOS/Linux:
+   source venv/bin/activate
    ```
-   # If using Python
+
+3. **Install dependencies:**
+   ```bash
    pip install -r requirements.txt
-
-   # If using Node.js
-   npm install
    ```
 
-3. **Run the application:**
+4. **Configure Environment Variables:**
+   Create a `.env` file in the root directory and add your specific configurations:
+   ```env
+   OPENAI_API_KEY=your_openai_api_key_here
+   FLASK_SECRET_KEY=your_secure_flask_key
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASSWORD=your_mysql_password
+   DB_PORT=3307
+   DB_NAME=feel_sync_db
    ```
-   # Example for Python
-   python main.py
 
-   # Example for Node.js
-   npm start
+5. **Run the Application:**
+   The application will automatically connect and create the necessary database tables (users, mood logs, chat sessions) on first launch if they don't already exist.
+   ```bash
+   python app.py
    ```
 
-## Contributing
+6. **Access the App:**
+   Open a web browser and navigate to `http://127.0.0.1:5000/`.
 
-We welcome contributions! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+## 🤝 Contributing
+Contributions, issues, and feature requests are welcome! Feel free to check the issues page or submit pull requests to help improve Feel Sync.
 
-## License
-
-This project is licensed under the [MIT License](LICENSE).
-
-## Contact
-
-For feedback, ideas, or support, please open an [issue](https://github.com/ryankoigi-dev/Well-Mind/issues) or reach out to [@ryankoigi-dev](https://github.com/ryankoigi-dev).
-To view the Well-Mind web application visit https://ryankoigi.mgx.world 
----
-
-*Empower your mind, one prompt at a time with Well-Mind and MGX.*
+## 📄 License
+This project is provided under the MIT License.

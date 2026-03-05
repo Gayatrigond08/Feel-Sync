@@ -4,11 +4,16 @@ import os
 
 class DatabaseSetup:
     def __init__(self):
+        # Load configuration from environment variables
+        from dotenv import load_dotenv
+        load_dotenv()
+        
         self.connection = None
         self.db_config = {
-            'host': 'localhost',
-            'user': 'root',
-            'password': 'your-mysql-password'  # Change this to your MySQL password
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'user': os.getenv('DB_USER', 'root'),
+            'password': os.getenv('DB_PASSWORD', ''),
+            'port': int(os.getenv('DB_PORT', 3307))
         }
     
     def connect_to_mysql(self):
@@ -22,12 +27,12 @@ class DatabaseSetup:
             return False
     
     def create_database(self):
-        """Create the wellmind_db database"""
+        """Create the feel_sync_db database"""
         try:
             cursor = self.connection.cursor()
-            cursor.execute("CREATE DATABASE IF NOT EXISTS wellmind_db")
-            cursor.execute("USE wellmind_db")
-            print("Database 'wellmind_db' created/selected successfully")
+            cursor.execute("CREATE DATABASE IF NOT EXISTS feel_sync_db")
+            cursor.execute("USE feel_sync_db")
+            print("Database 'feel_sync_db' created/selected successfully")
             cursor.close()
             return True
         except Error as e:
@@ -35,7 +40,7 @@ class DatabaseSetup:
             return False
     
     def create_tables(self):
-        """Create all necessary tables for the Well Mind application"""
+        """Create all necessary tables for the Feel Sync application"""
         try:
             cursor = self.connection.cursor()
             
@@ -104,7 +109,7 @@ class DatabaseSetup:
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 title VARCHAR(200) NOT NULL,
                 description TEXT,
-                category ENUM('meditation', 'exercise', 'articles', 'crisis') NOT NULL,
+                category VARCHAR(50) NOT NULL,
                 content_url VARCHAR(500),
                 content_text TEXT,
                 is_active BOOLEAN DEFAULT TRUE,
@@ -138,6 +143,9 @@ class DatabaseSetup:
                 ("user_activity", user_activity_table)
             ]
             
+            # Drop wellness_resources to fix ENUM to VARCHAR transition
+            cursor.execute("DROP TABLE IF EXISTS wellness_resources")
+            
             for table_name, query in tables:
                 cursor.execute(query)
                 print(f"Table '{table_name}' created successfully")
@@ -154,26 +162,30 @@ class DatabaseSetup:
         try:
             cursor = self.connection.cursor()
             
+            # Ensure wellness_resources category can handle new options
+            try:
+                cursor.execute("ALTER TABLE wellness_resources MODIFY category VARCHAR(50) NOT NULL")
+            except Error as e:
+                # Ignore if it fails (e.g. column already changed or table doesn't exist yet)
+                pass
+
             # Sample wellness resources
             wellness_resources = [
-                ("5-Minute Breathing Exercise", "Quick breathing technique for immediate stress relief", "meditation", 
-                 "https://example.com/breathing", "Focus on your breath. Inhale for 4 counts, hold for 4, exhale for 6."),
+                ("Deep Breathing Space", "Follow the expanding circle to find your inner calm with the 4-7-8 method.", "meditation", 
+                 "internal:breathing-app", "Focus on your breath. Inhale for 4 counts, hold for 4, exhale for 6."),
                 
-                ("Daily Mood Journaling", "Learn how to track and understand your emotions", "articles",
-                 "https://example.com/journaling", "Writing about your feelings can help you process emotions and identify patterns."),
+                ("Zen Garden Bubble Pop", "Pop the floating bubbles to discover positive affirmations and calm your mind.", "game",
+                 "internal:game-app", "A playful way to release stress and find positive thoughts."),
                 
-                ("10-Minute Morning Yoga", "Gentle yoga routine to start your day positively", "exercise",
-                 "https://example.com/yoga", "Simple stretches and poses to energize your body and calm your mind."),
+                ("Creative Wellness Journal", "Express your thoughts with creative prompts and mood stickers.", "journal",
+                 "internal:creative-journal", "A safe space for your daily reflections and creative expression."),
                 
-                ("Crisis Support Resources", "24/7 helplines and emergency contacts", "crisis",
-                 "https://example.com/crisis", "National Suicide Prevention Lifeline: 988, Crisis Text Line: Text HOME to 741741"),
-                
-                ("Progressive Muscle Relaxation", "Technique to release physical tension and stress", "meditation",
-                 "https://example.com/pmr", "Systematically tense and relax different muscle groups to achieve deep relaxation."),
-                
-                ("Mindful Walking Guide", "How to turn a simple walk into a mindfulness practice", "exercise",
-                 "https://example.com/walking", "Pay attention to each step, your breathing, and your surroundings.")
+                ("Soul Whispers", "Receive comforting lyrics, empowering facts, and motivational thoughts.", "knowledge",
+                 "internal:empower-app", "Daily wisdom for a stronger, more confident mind.")
             ]
+            
+            # Clear existing resources to avoid duplicates or old data
+            cursor.execute("DELETE FROM wellness_resources")
             
             insert_resources_query = """
             INSERT INTO wellness_resources (title, description, category, content_url, content_text)
@@ -185,13 +197,13 @@ class DatabaseSetup:
             # Create a demo user (optional)
             demo_user_query = """
             INSERT INTO users (username, email, password_hash) 
-            VALUES ('demo_user', 'demo@wellmind.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6hsxq/3vV.')
+            VALUES ('demo_user', 'demo@feelsync.com', 'pbkdf2:sha256:600000$hbYELeopkXJ6d2eO$03bc97a9f6d4d49a3770387b32064161823eb55775ea70806134426e8fde7b40f1825f65')
             ON DUPLICATE KEY UPDATE username=username
             """
             cursor.execute(demo_user_query)
             
             self.connection.commit()
-            print("Sample data inserted successfully")
+            print("Feel Sync data handles initialized successfully")
             cursor.close()
             return True
             
@@ -201,7 +213,7 @@ class DatabaseSetup:
     
     def setup_database(self):
         """Complete database setup process"""
-        print("Starting Well Mind database setup...")
+        print("Starting Feel Sync database setup...")
         
         if not self.connect_to_mysql():
             return False
@@ -231,7 +243,7 @@ def main():
     try:
         success = db_setup.setup_database()
         if success:
-            print("\n✅ Well Mind database is ready!")
+            print("\n✅ Feel Sync database is ready!")
             print("You can now run the Flask application with: python app.py")
         else:
             print("\n❌ Database setup failed. Please check the error messages above.")

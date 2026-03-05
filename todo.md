@@ -1,4 +1,4 @@
-# Well Mind Web Application - MVP Implementation
+# Feel Sync Web Application - MVP Implementation
 
 ## Project Overview
 A mental wellness platform with mood tracking, AI-powered chat support, and wellness resources.
