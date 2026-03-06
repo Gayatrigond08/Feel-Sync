@@ -470,7 +470,7 @@ class FeelSyncApp {
 
         const labels = sortedEntries.map(entry => {
             const date = new Date(entry.timestamp);
-            return date.toLocaleDateString();
+            return `${date.getDate()}/${date.getMonth() + 1}`;
         });
 
         const data = sortedEntries.map(entry => entry.mood_score);
@@ -507,7 +507,7 @@ class FeelSyncApp {
             const dateStr = date.toLocaleDateString(undefined, {
                 month: 'short',
                 day: 'numeric',
-                year: '2-digit'
+                year: 'numeric'
             });
 
             // Pick 2 random stickers
