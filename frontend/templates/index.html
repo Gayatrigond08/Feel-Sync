@@ -213,6 +213,29 @@
         </div>
     </div>
 
+    <!-- Edit Journal Modal -->
+    <div id="edit-journal-modal" class="modal">
+        <div class="edit-modal-content glass-card">
+            <span class="close" onclick="document.getElementById('edit-journal-modal').style.display='none'">&times;</span>
+            <h2 style="color: #667eea; margin-bottom: 20px;">Edit Journal Entry</h2>
+            <form id="edit-journal-form">
+                <input type="hidden" id="edit-entry-id">
+                <p style="margin-bottom: 10px; font-weight: 600;">How were you feeling?</p>
+                <div class="mood-scale" style="margin-bottom: 25px; display: flex; justify-content: space-around;">
+                    <button type="button" class="mood-btn edit-mood-btn" data-mood="1">😢</button>
+                    <button type="button" class="mood-btn edit-mood-btn" data-mood="2">😕</button>
+                    <button type="button" class="mood-btn edit-mood-btn" data-mood="3">😐</button>
+                    <button type="button" class="mood-btn edit-mood-btn" data-mood="4">🙂</button>
+                    <button type="button" class="mood-btn edit-mood-btn" data-mood="5">😊</button>
+                </div>
+                <p style="margin-bottom: 10px; font-weight: 600;">Update your notes</p>
+                <textarea id="edit-mood-notes" placeholder="Update your notes..." 
+                          style="width: 100%; min-height: 120px; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 20px; font-family: inherit; font-size: 1rem; outline: none; transition: border-color 0.3s;"></textarea>
+                <button type="submit" class="btn-primary" style="width: 100%;">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Breathing Modal -->
     <div id="breathing-modal" class="modal wellness-modal">
         <div class="modal-content hub-content">

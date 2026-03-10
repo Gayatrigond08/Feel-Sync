@@ -155,6 +155,16 @@ class FeelSyncApp {
             const hash = window.location.hash.substring(1);
             if (hash) this.navigateTo(hash, false);
         });
+
+        // Edit Journal Form
+        document.getElementById('edit-journal-form').addEventListener('submit', (e) => this.handleUpdateJournal(e));
+        document.querySelectorAll('.edit-mood-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.edit-mood-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                this.editSelectedMood = btn.dataset.mood;
+            });
+        });
     }
 
     navigateTo(sectionId, updateHash = true) {
@@ -516,11 +526,16 @@ class FeelSyncApp {
             const cat = Math.random() > 0.5 ? '🐱' : '🐈';
 
             return `
-                <div class="scrapbook-card">
+                <div class="scrapbook-card" data-id="${entry.id}">
                     <div class="sticker sticker-1">${s1}</div>
                     <div class="sticker sticker-2">${s2}</div>
                     <div class="sticker sticker-cat">${cat}</div>
                     
+                    <div class="scrapbook-actions">
+                        <button title="Edit" onclick="feelSyncApp.openEditModal(${entry.id}, ${entry.mood_score}, \`${entry.notes ? entry.notes.replace(/`/g, '\\`').replace(/\n/g, '\\n') : ''}\`)"><i class="fas fa-edit"></i></button>
+                        <button title="Delete" onclick="feelSyncApp.deleteJournalEntry(${entry.id})"><i class="fas fa-trash"></i></button>
+                    </div>
+
                     <div class="scrapbook-date">${dateStr}</div>
                     <div class="scrapbook-mood">
                         <span class="scrapbook-emoji">${moodEmojis[entry.mood_score] || '😐'}</span>
@@ -533,6 +548,80 @@ class FeelSyncApp {
                 </div>
             `;
         }).join('');
+    }
+
+    async deleteJournalEntry(id) {
+        if (!confirm('Are you sure you want to delete this memory? 🌸')) return;
+
+        try {
+            const response = await fetch(`/api/mood/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                this.showNotification('Memory deleted from your journal', 'info');
+                this.loadUserMoodData();
+            } else {
+                this.showNotification('Failed to delete entry', 'error');
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            this.showNotification('Connection error', 'error');
+        }
+    }
+
+    openEditModal(id, mood, notes) {
+        const modal = document.getElementById('edit-journal-modal');
+        document.getElementById('edit-entry-id').value = id;
+        document.getElementById('edit-mood-notes').value = notes;
+
+        // Select the current mood button
+        document.querySelectorAll('.edit-mood-btn').forEach(btn => {
+            btn.classList.remove('selected');
+            if (btn.dataset.mood == mood) {
+                btn.classList.add('selected');
+                this.editSelectedMood = mood;
+            }
+        });
+
+        modal.style.display = 'block';
+    }
+
+    async handleUpdateJournal(e) {
+        e.preventDefault();
+        const id = document.getElementById('edit-entry-id').value;
+        const notes = document.getElementById('edit-mood-notes').value;
+        const mood = this.editSelectedMood;
+
+        if (!mood) {
+            this.showNotification('Please select a mood', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/mood/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    mood_score: parseInt(mood),
+                    notes: notes
+                })
+            });
+
+            if (response.ok) {
+                this.showNotification('Journal entry updated! ✨', 'success');
+                this.hideModal('edit-journal-modal');
+                this.loadUserMoodData();
+            } else {
+                const data = await response.json();
+                this.showNotification(data.message || 'Update failed', 'error');
+            }
+        } catch (error) {
+            console.error('Update error:', error);
+            this.showNotification('Connection error', 'error');
+        }
     }
 
     getMoodLabel(score) {
