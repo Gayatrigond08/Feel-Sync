@@ -10,6 +10,7 @@ class FeelSyncApp {
         this.score = 0;
         this.recentNuggets = []; // To avoid repeats
         this.lastNuggetType = null; // To mix up types
+        this.chatHistory = []; // Session chat history for context
         this.init();
     }
 
@@ -65,9 +66,11 @@ class FeelSyncApp {
         }
 
         // Chat
-        document.getElementById('send-message').addEventListener('click', () => this.sendMessage());
-        document.getElementById('chat-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.sendMessage();
+        const aiSendBtn = document.getElementById('ai-send-btn');
+        const aiChatInput = document.getElementById('ai-chat-input');
+        if (aiSendBtn) aiSendBtn.addEventListener('click', () => this.handleAiChat());
+        if (aiChatInput) aiChatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.handleAiChat();
         });
 
         // Mobile Menu
@@ -86,7 +89,9 @@ class FeelSyncApp {
                 document.querySelectorAll('.hub-nav-btn').forEach(b => b.classList.remove('active'));
                 document.querySelectorAll('.hub-section').forEach(s => s.classList.remove('active'));
                 btn.classList.add('active');
-                document.getElementById(target).classList.add('active');
+                if (document.getElementById(target)) {
+                    document.getElementById(target).classList.add('active');
+                }
 
                 // Switch logic
                 if (target === 'game-app') {
@@ -106,10 +111,13 @@ class FeelSyncApp {
             });
         });
 
-        document.getElementById('start-breathing').addEventListener('click', () => this.toggleBreathingExercise());
+        const startBreathBtn = document.getElementById('start-breathing');
+        if (startBreathBtn) startBreathBtn.addEventListener('click', () => this.toggleBreathingExercise());
+
         document.querySelectorAll('.audio-btn').forEach(btn => {
             btn.addEventListener('click', () => this.toggleAmbientSound(btn.dataset.sound, btn));
         });
+
         const stopAudioHub = document.getElementById('stop-audio-hub');
         if (stopAudioHub) {
             stopAudioHub.addEventListener('click', () => this.stopAmbientSound());
@@ -131,8 +139,11 @@ class FeelSyncApp {
         if (nextNugget) nextNugget.onclick = () => this.generateNewNugget();
 
         // Creative Journal
-        document.getElementById('new-prompt').addEventListener('click', () => this.generateNewPrompt());
-        document.getElementById('save-creative').addEventListener('click', () => this.saveCreativeEntry());
+        const newPromptBtn = document.getElementById('new-prompt');
+        if (newPromptBtn) newPromptBtn.addEventListener('click', () => this.generateNewPrompt());
+
+        const saveCreativeBtn = document.getElementById('save-creative');
+        if (saveCreativeBtn) saveCreativeBtn.addEventListener('click', () => this.saveCreativeEntry());
         document.querySelectorAll('.btn-tag').forEach(btn => {
             btn.addEventListener('click', () => {
                 btn.classList.toggle('selected');
@@ -157,7 +168,8 @@ class FeelSyncApp {
         });
 
         // Edit Journal Form
-        document.getElementById('edit-journal-form').addEventListener('submit', (e) => this.handleUpdateJournal(e));
+        const editJournalForm = document.getElementById('edit-journal-form');
+        if (editJournalForm) editJournalForm.addEventListener('submit', (e) => this.handleUpdateJournal(e));
         document.querySelectorAll('.edit-mood-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.edit-mood-btn').forEach(b => b.classList.remove('selected'));
@@ -169,7 +181,7 @@ class FeelSyncApp {
 
     navigateTo(sectionId, updateHash = true) {
         // Protected sections: everything except 'home'
-        const protectedSections = ['mood-tracker', 'journal', 'ai-chat', 'resources'];
+        const protectedSections = ['mood-tracker', 'journal', 'dashboard', 'chatbot', 'daily-reflection', 'resources'];
         if (protectedSections.includes(sectionId) && !this.currentUser) {
             this.showNotification('Please login to access this feature', 'info');
             this.showModal('login-modal');
@@ -200,6 +212,17 @@ class FeelSyncApp {
 
         if (updateHash) {
             window.history.pushState(null, null, `#${sectionId}`);
+        }
+
+        // Initialize Section Logic
+        if (sectionId === 'dashboard') this.initDashboard();
+        if (sectionId === 'chatbot') this.initChatbot();
+        if (sectionId === 'daily-reflection') this.initReflections();
+
+        // Particle Container Visibility (Only Home)
+        const particleContainer = document.getElementById('particle-container');
+        if (particleContainer) {
+            particleContainer.style.display = (sectionId === 'home') ? 'block' : 'none';
         }
 
         // Close mobile menu if open
@@ -246,6 +269,7 @@ class FeelSyncApp {
                 this.currentUser = data.user;
                 // Save to localStorage
                 localStorage.setItem('feelsync_user', JSON.stringify(this.currentUser));
+                localStorage.setItem('feelsync_token', data.token);
                 this.hideModal('login-modal');
                 this.updateUIForLoggedInUser();
                 this.loadUserMoodData();
@@ -342,77 +366,206 @@ class FeelSyncApp {
         }
     }
 
-    async sendMessage() {
-        const input = document.getElementById('chat-input');
-        const message = input.value.trim();
+    // --- AI Chatbot Integration ---
+    async initChatbot() {
+        const sendBtn = document.getElementById('ai-send-btn');
+        const inputField = document.getElementById('ai-chat-input');
+
+        // Remove existing listener if any to prevent duplicates
+        const newSendBtn = sendBtn.cloneNode(true);
+        sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
+
+        newSendBtn.addEventListener('click', () => this.handleAiChat());
+        inputField.onkeypress = (e) => {
+            if (e.key === 'Enter') this.handleAiChat();
+        };
+    }
+
+    async handleAiChat() {
+        const chatInput = document.getElementById('ai-chat-input');
+        const chatMessages = document.getElementById('ai-chat-messages');
+        const message = chatInput.value.trim();
 
         if (!message) return;
 
-        // Add user message to chat
-        this.addMessageToChat(message, 'user');
-        input.value = '';
+        // User message
+        this.appendChatMessage(message, 'user');
+        chatInput.value = '';
 
-        // Show typing indicator
-        this.addTypingIndicator();
+        // Typing indicator
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message bot-message ai-typing';
+        typingDiv.innerHTML = `<div class="message-content">Thinking...</div>`;
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Update local history
+        this.chatHistory.push({ role: 'user', content: message });
 
         try {
-            const response = await fetch('/api/chat', {
+            const response = await fetch('/api/chatbot', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('feelsync_token')}`
                 },
                 body: JSON.stringify({
-                    message: message,
-                    user_id: this.currentUser?.id || 1
-                }),
+                    message,
+                    history: this.chatHistory.slice(-10) // Send context
+                })
             });
-
             const data = await response.json();
 
-            // Remove typing indicator
-            this.removeTypingIndicator();
-
-            if (response.ok) {
-                this.addMessageToChat(data.response, 'bot');
-            } else {
-                this.addMessageToChat('Sorry, I encountered an error. Please try again.', 'bot');
-            }
+            typingDiv.remove();
+            const botMessage = data.response;
+            this.chatHistory.push({ role: 'assistant', content: botMessage });
+            this.appendChatMessage(botMessage.replace(/\n/g, '<br>'), 'bot');
         } catch (error) {
+            typingDiv.remove();
             console.error('Chat error:', error);
-            this.removeTypingIndicator();
-            this.addMessageToChat('Connection error. Please check your internet connection.', 'bot');
+            this.showNotification('AI service unavailable', 'error');
         }
     }
 
-    addMessageToChat(message, sender) {
-        const chatMessages = document.getElementById('chat-messages');
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${sender}-message`;
-
-        const messageContent = document.createElement('div');
-        messageContent.className = 'message-content';
-        messageContent.textContent = message;
-
-        messageDiv.appendChild(messageContent);
-        chatMessages.appendChild(messageDiv);
-
-        // Scroll to bottom
+    appendChatMessage(message, sender) {
+        const chatMessages = document.getElementById('ai-chat-messages');
+        const div = document.createElement('div');
+        div.className = `message ${sender}-message`;
+        div.innerHTML = `<div class="message-content">${message}</div>`;
+        chatMessages.appendChild(div);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    addTypingIndicator() {
-        const chatMessages = document.getElementById('chat-messages');
-        const typingDiv = document.createElement('div');
-        typingDiv.className = 'message bot-message typing-indicator';
-        typingDiv.innerHTML = '<div class="message-content"><div class="loading"></div> MindBot is typing...</div>';
-        chatMessages.appendChild(typingDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+    // --- Dashboard Integration ---
+    async initDashboard() {
+        try {
+            const analyticsRes = await fetch('/api/mood-analytics', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('feelsync_token')}` }
+            });
+            const insightsRes = await fetch('/api/pattern-insights', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('feelsync_token')}` }
+            });
+
+            const analytics = await analyticsRes.json();
+            const insights = await insightsRes.json();
+
+            this.renderDashboardCharts(analytics, insights);
+            this.updateDashboardInsights(insights);
+        } catch (error) {
+            console.error('Dashboard error:', error);
+        }
     }
 
-    removeTypingIndicator() {
-        const typingIndicator = document.querySelector('.typing-indicator');
-        if (typingIndicator) {
-            typingIndicator.remove();
+    renderDashboardCharts(analytics, insights) {
+        // Line Chart
+        const trendCtx = document.getElementById('weeklyTrendChart').getContext('2d');
+        if (this.trendChart) this.trendChart.destroy();
+        this.trendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: analytics.weekly_trend.map(d => d.date),
+                datasets: [{
+                    label: 'Mood',
+                    data: analytics.weekly_trend.map(d => d.avg_score),
+                    borderColor: '#5aa773',
+                    fill: false,
+                    tension: 0.4
+                }]
+            }
+        });
+
+        // Emotion Pie
+        const distCtx = document.getElementById('emotionDistChart').getContext('2d');
+        const moodLabels = { 1: 'Sad', 2: 'Down', 3: 'Neutral', 4: 'Good', 5: 'Happy' };
+        if (this.distChart) this.distChart.destroy();
+        this.distChart = new Chart(distCtx, {
+            type: 'pie',
+            data: {
+                labels: analytics.emotion_distribution.map(d => moodLabels[d.mood_score]),
+                datasets: [{
+                    data: analytics.emotion_distribution.map(d => d.count),
+                    backgroundColor: ['#ff6b6b', '#ffd93d', '#6bcbff', '#4ecdc4', '#5aa773']
+                }]
+            }
+        });
+
+        // Ratio Doughnut
+        const ratioCtx = document.getElementById('moodRatioChart').getContext('2d');
+        if (this.ratioChart) this.ratioChart.destroy();
+        this.ratioChart = new Chart(ratioCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Positive', 'Negative', 'Neutral'],
+                datasets: [{
+                    data: [analytics.ratio.positive, analytics.ratio.negative, analytics.ratio.neutral],
+                    backgroundColor: ['#5aa773', '#ff6b6b', '#6bcbff']
+                }]
+            }
+        });
+
+        // Day Bar
+        const dayCtx = document.getElementById('dayTrendsChart').getContext('2d');
+        if (this.dayChart) this.dayChart.destroy();
+        this.dayChart = new Chart(dayCtx, {
+            type: 'bar',
+            data: {
+                labels: insights.day_trends.map(d => d.day),
+                datasets: [{
+                    label: 'Avg Mood',
+                    data: insights.day_trends.map(d => d.avg_score),
+                    backgroundColor: '#667eea'
+                }]
+            }
+        });
+    }
+
+    updateDashboardInsights(insights) {
+        document.getElementById('common-emotion').textContent = insights.common_emotion;
+        document.getElementById('pos-percentage').textContent = insights.pos_percentage + '%';
+        document.getElementById('neg-percentage').textContent = insights.neg_percentage + '%';
+        const stability = insights.pos_percentage > 70 ? 'High' : insights.pos_percentage > 40 ? 'Moderate' : 'Volatile';
+        document.getElementById('mood-stability').textContent = stability;
+    }
+
+    // --- Reflections Integration ---
+    initReflections() {
+        const submitBtn = document.getElementById('submit-reflection');
+        submitBtn.onclick = () => this.handleReflectionSubmit();
+    }
+
+    async handleReflectionSubmit() {
+        const smile = document.getElementById('smile').value;
+        const challenge = document.getElementById('challenge').value;
+        const grateful = document.getElementById('grateful').value;
+        const submitBtn = document.getElementById('submit-reflection');
+
+        if (!smile || !challenge || !grateful) {
+            this.showNotification('Please fill all fields', 'error');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Generating...';
+
+        try {
+            const response = await fetch('/api/daily-reflection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('feelsync_token')}`
+                },
+                body: JSON.stringify({ smile, challenge, grateful })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                document.getElementById('reflection-summary').textContent = data.summary;
+                document.getElementById('summary-section').style.display = 'block';
+                submitBtn.textContent = 'Reflect Again';
+                submitBtn.disabled = false;
+            }
+        } catch (error) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Generate Smart Summary';
         }
     }
 
@@ -475,6 +628,7 @@ class FeelSyncApp {
     }
 
     updateMoodChart(moodEntries) {
+        if (!this.chart || !moodEntries) return;
         // Sort briefly for chart (chronological)
         const sortedEntries = [...moodEntries].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
@@ -485,9 +639,11 @@ class FeelSyncApp {
 
         const data = sortedEntries.map(entry => entry.mood_score);
 
-        this.chart.data.labels = labels;
-        this.chart.data.datasets[0].data = data;
-        this.chart.update();
+        if (this.chart.data) {
+            this.chart.data.labels = labels;
+            this.chart.data.datasets[0].data = data;
+            this.chart.update();
+        }
     }
 
     renderJournal(moodEntries) {
@@ -1078,7 +1234,7 @@ class FeelSyncApp {
         const heroSubtitle = document.getElementById('hero-subtitle');
 
         if (this.currentUser && welcomeTitle) {
-            welcomeTitle.textContent = `Hello, ${this.currentUser.username} ✨`;
+            welcomeTitle.textContent = `Hello, ${this.currentUser.username}`;
             heroSubtitle.textContent = "How is your heart feeling today? Let's take a small step together.";
             this.updateHomeWhisper();
         }
@@ -1107,21 +1263,7 @@ class FeelSyncApp {
         const container = document.getElementById('particle-container');
         if (!container) return;
 
-        const emojis = ['✨', '🌟', '🌸', '🌿', '💚', '☁️', '🎈'];
-
-        for (let i = 0; i < 15; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'float-item';
-            particle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-
-            // Random positions and animations
-            particle.style.left = Math.random() * 100 + '%';
-            particle.style.top = Math.random() * 100 + '%';
-            particle.style.animationDelay = Math.random() * 5 + 's';
-            particle.style.fontSize = (Math.random() * 20 + 20) + 'px';
-
-            container.appendChild(particle);
-        }
+        container.innerHTML = ''; // Clear existing - no more floating emojis
     }
 }
 

@@ -8,41 +8,49 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
 
 :root {
-    --theme-bg-1: #f0fdfa;
-    /* Mint Mist */
-    --theme-bg-2: #e0f2fe;
-    /* Sky Silk */
-    --theme-accent: #8f6bd2;
-    /* Soft Teal */
-    --text-color: #1e293b;
+    --theme-bg-1: #fdf2f8;
+    /* Light Rose */
+    --theme-bg-2: #f0fdf4;
+    /* Light Mint */
+    --theme-accent: #fecdd3;
+    /* Rose Gold Accent */
+    --text-color: #1a432d;
 }
 
 body.theme-morning {
-    --theme-bg-1: #fff1e6;
-    --theme-bg-2: #ffe5d9;
-    --theme-accent: #ffcad4;
-    --text-color: #5c4a4a;
+    --theme-bg-1: #fff1f2;
+    /* Sunrise Rose */
+    --theme-bg-2: #ecfdf5;
+    /* Dewy Green */
+    --theme-accent: #ffe4e6;
+    --text-color: #1a432d;
 }
 
 body.theme-afternoon {
-    --theme-bg-1: #f3faf2;
-    --theme-bg-2: #e4f2e3;
-    --theme-accent: #cde6cb;
-    --text-color: #4a5c4c;
+    --theme-bg-1: #f0fdf4;
+    /* Mint Green */
+    --theme-bg-2: #fdf2f8;
+    /* Soft Rose */
+    --theme-accent: #dcfce7;
+    --text-color: #1a432d;
 }
 
 body.theme-evening {
-    --theme-bg-1: #f8f4ff;
-    --theme-bg-2: #f0e6ff;
-    --theme-accent: #e0d4ff;
-    --text-color: #4a405c;
+    --theme-bg-1: #fff1f2;
+    /* Sunset Rose */
+    --theme-bg-2: #dcfce7;
+    /* Calm Green */
+    --theme-accent: #fecdd3;
+    --text-color: #1a432d;
 }
 
 body.theme-night {
-    --theme-bg-1: #ebf4f6;
-    --theme-bg-2: #d6e8ee;
-    --theme-accent: #b8d8e0;
-    --text-color: #40505c;
+    --theme-bg-1: #ecfccb;
+    /* Very light lime */
+    --theme-bg-2: #fff1f2;
+    /* Night rose */
+    --theme-accent: #e2e8f0;
+    --text-color: #1a432d;
 }
 
 body {
@@ -69,6 +77,12 @@ body {
     100% {
         background-position: 0% 50%;
     }
+}
+
+h1,
+h2,
+h3 {
+    color: #1a432d;
 }
 
 .container {
@@ -1692,4 +1706,307 @@ body:not(.logged-in) .hero {
     right: -10px;
     font-size: 3rem;
     transform: scaleX(-1);
+}
+
+/* --- Enhanced Dashboard & Reflections Styling --- */
+
+/* Floating Emojis Animation */
+@keyframes floatUp {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 0.5;
+    }
+
+    90% {
+        opacity: 0.5;
+    }
+
+    100% {
+        transform: translateY(-125vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Creeper Swaying (Wind Effect) */
+@keyframes swayHero {
+
+    0%,
+    100% {
+        transform: rotate(-8deg) translateX(-5px) translateY(0);
+    }
+
+    33% {
+        transform: rotate(5deg) translateX(3px) translateY(5px);
+    }
+
+    66% {
+        transform: rotate(-3deg) translateX(-2px) translateY(2px);
+    }
+}
+
+.creeper-item {
+    position: absolute;
+    /* Relative to section, not window */
+    top: 10px;
+    /* Below the header line */
+    z-index: 1;
+    font-size: 4.5rem;
+    transform-origin: top center;
+    animation: swayHero 7s ease-in-out infinite;
+    pointer-events: none;
+    opacity: 0.45;
+}
+
+/* Butterfly Flying Paths */
+@keyframes flyPath1 {
+    0% {
+        transform: translate(-10vw, 20vh) rotate(10deg);
+    }
+
+    50% {
+        transform: translate(50vw, 50vh) rotate(-10deg);
+    }
+
+    100% {
+        transform: translate(110vw, 10vh) rotate(10deg);
+    }
+}
+
+@keyframes flyPath2 {
+    0% {
+        transform: translate(110vw, 80vh) rotate(190deg);
+    }
+
+    50% {
+        transform: translate(50vw, 40vh) rotate(170deg);
+    }
+
+    100% {
+        transform: translate(-10vw, 70vh) rotate(190deg);
+    }
+}
+
+.butterfly-item {
+    position: fixed;
+    z-index: -1;
+    font-size: 2.5rem;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.float-item {
+    position: absolute;
+    /* Relative to section */
+    bottom: 20px;
+    z-index: 1;
+    pointer-events: none;
+    animation: floatUp var(--duration, 15s) linear infinite;
+    animation-delay: var(--delay, 0s);
+    animation-fill-mode: both;
+    font-size: var(--size, 2rem);
+    left: var(--left, 50%);
+}
+
+#particle-container {
+    position: absolute;
+    /* Back to absolute within hero section */
+    top: 80px;
+    /* Push below navbar height */
+    left: 0;
+    width: 100%;
+    height: calc(100% - 80px);
+    /* Fill the rest of the section */
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* Section Specific Backgrounds */
+#dashboard {
+    background: linear-gradient(135deg, #fdf2f8, #f0fdf4);
+    /* Rose Gold to Light Mint */
+}
+
+#daily-reflection {
+    background: linear-gradient(135deg, #f0fdf4, #fdf2f8);
+    /* Mint to Rose Gold flip */
+}
+
+/* Dashboard Improvements */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2.5rem;
+    margin-top: 2rem;
+}
+
+.chart-container {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(15px);
+    border-radius: 15px;
+    /* Slightly smaller radius */
+    padding: 1rem;
+    /* Less padding */
+    min-height: 180px;
+    /* Further reduced height */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    transition: transform 0.3s ease;
+    max-width: 100%;
+}
+
+.chart-container:hover {
+    transform: translateY(-5px);
+}
+
+.chart-container h3 {
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.chart-container canvas {
+    max-width: 100% !important;
+    max-height: 100% !important;
+}
+
+/* Insights Card Improvement */
+.insights-card {
+    grid-column: span 2;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(15px);
+    border-radius: 24px;
+    padding: 2.5rem;
+    margin-top: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
+}
+
+.insights-card h3 {
+    margin-bottom: 2rem;
+    color: #1a432d;
+    font-weight: 800;
+}
+
+.insight-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+    margin-top: 1.5rem;
+}
+
+.insight-item {
+    padding: 1.5rem;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.insight-value {
+    color: #1a432d;
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+.insight-label {
+    color: rgba(26, 67, 45, 0.6);
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+.insight-item:hover {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    background: var(--theme-bg-1);
+}
+
+/* Reflection Page Improvements */
+.reflection-card {
+    max-width: 800px;
+    margin: 3rem auto;
+    padding: 3rem;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(20px);
+    border-radius: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.form-group label {
+    font-size: 1.1rem;
+    color: var(--text-color);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.form-group textarea {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 2px solid rgba(26, 67, 45, 0.1) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    font-size: 1.1rem;
+    min-height: 40px;
+    max-height: 80px;
+    padding: 0.5rem 0 !important;
+    transition: all 0.3s ease;
+    resize: none;
+    color: var(--text-color);
+}
+
+.form-group textarea::placeholder {
+    color: rgba(26, 67, 45, 0.3);
+    font-style: italic;
+}
+
+.form-group textarea:focus {
+    border-bottom-color: #5aa773 !important;
+    background: transparent !important;
+    outline: none !important;
+}
+
+#summary-section {
+    background: linear-gradient(135deg, rgba(90, 167, 115, 0.1), rgba(78, 205, 196, 0.1));
+    border-left: 6px solid #5aa773;
+    padding: 2.5rem;
+    margin-top: 3rem;
+    border-radius: 0 24px 24px 0;
+}
+
+#summary-section h3 {
+    margin-bottom: 1rem;
+    color: #2d5a3c;
+}
+
+#reflection-summary {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: #4a5c4c;
+}
+
+/* Responsiveness for Dashboard */
+@media (max-width: 900px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .insights-card {
+        grid-column: span 1;
+    }
+
+    .insight-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }

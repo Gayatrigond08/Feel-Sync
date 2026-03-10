@@ -74,120 +74,10 @@ class DatabaseManager:
 
 db = DatabaseManager()
 
-class AITherapist:
-    def __init__(self):
-        self.system_prompt = """
-        You are MindBot, a compassionate AI mental health companion for the Feel Sync platform. Your role is to:
-        1. Provide emotional support and active listening
-        2. Offer evidence-based coping strategies
-        3. Encourage professional help when needed
-        4. Never diagnose or provide medical advice
-        5. Be empathetic, non-judgmental, and supportive
-        6. Keep responses concise but meaningful
-        7. Ask follow-up questions to understand better
-        
-        Always prioritize user safety and well-being. If someone expresses suicidal thoughts or self-harm, 
-        immediately encourage them to contact emergency services or a crisis hotline.
-        """
-    
-    def analyze_sentiment(self, text):
-        """Analyze sentiment of user message"""
-        try:
-            blob = TextBlob(text)
-            sentiment = blob.sentiment.polarity
-            
-            if sentiment > 0.1:
-                return "positive"
-            elif sentiment < -0.1:
-                return "negative"
-            else:
-                return "neutral"
-        except:
-            return "neutral"
-    
-    def generate_response(self, user_message, conversation_history=None):
-        """Generate AI response using OpenAI GPT"""
-        try:
-            messages = [{"role": "system", "content": self.system_prompt}]
-            
-            # Add conversation history if available
-            if conversation_history:
-                for msg in conversation_history[-5:]:  # Last 5 messages for context
-                    messages.append(msg)
-            
-            messages.append({"role": "user", "content": user_message})
-            
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=messages,
-                max_tokens=200,
-                temperature=0.7
-            )
-            
-            return response.choices[0].message.content.strip()
-        
-        except Exception as e:
-            print(f"AI response error: {e}")
-            # Fallback responses based on sentiment
-            sentiment = self.analyze_sentiment(user_message)
-            return self.get_fallback_response(sentiment, user_message)
-    
-    def get_fallback_response(self, sentiment, user_message):
-        """Provide fallback responses when AI service is unavailable"""
-        user_message_lower = user_message.lower()
-        
-        # Crisis keywords
-        crisis_keywords = ['suicide', 'kill myself', 'end it all', 'hurt myself', 'self harm']
-        if any(keyword in user_message_lower for keyword in crisis_keywords):
-            return """I'm very concerned about what you're sharing. Please reach out for immediate help:
-            
-            🚨 Emergency: 911
-            📞 Crisis Text Line: Text HOME to 741741
-            📞 National Suicide Prevention Lifeline: 988
-            
-            You matter, and there are people who want to help you."""
-        
-        # Anxiety/stress keywords
-        anxiety_keywords = ['anxious', 'anxiety', 'stressed', 'panic', 'worried', 'overwhelmed']
-        if any(keyword in user_message_lower for keyword in anxiety_keywords):
-            return """I hear that you're feeling anxious or stressed. Here are some techniques that might help:
-            
-            🌬️ Try the 4-7-8 breathing technique: Breathe in for 4, hold for 7, exhale for 8
-            🧘 Practice grounding: Name 5 things you see, 4 you hear, 3 you touch, 2 you smell, 1 you taste
-            💪 Remember: This feeling is temporary and you have the strength to get through it
-            
-            What's been causing you the most stress lately?"""
-        
-        # Depression keywords
-        depression_keywords = ['depressed', 'sad', 'hopeless', 'empty', 'worthless', 'lonely']
-        if any(keyword in user_message_lower for keyword in depression_keywords):
-            return """I'm sorry you're going through such a difficult time. Your feelings are valid, and it's brave of you to reach out.
-            
-            💙 Remember: You are not alone in this
-            🌱 Small steps count - even getting through today is an achievement
-            🤝 Consider reaching out to a trusted friend, family member, or mental health professional
-            
-            What's one small thing that usually brings you even a tiny bit of comfort?"""
-        
-        # Positive sentiment
-        if sentiment == "positive":
-            return """I'm glad to hear some positivity in your message! It's wonderful when we can find moments of joy or accomplishment.
-            
-            ✨ Celebrating these moments, big or small, is so important for our mental health
-            🌟 What's been going well for you lately?
-            
-            How can I support you in maintaining this positive momentum?"""
-        
-        # Neutral/general response
-        return """Thank you for sharing with me. I'm here to listen and support you through whatever you're experiencing.
-        
-        🤗 Remember that it's okay to not be okay sometimes
-        💭 Your thoughts and feelings matter
-        🌈 Every day is a new opportunity for growth and healing
-        
-        What's on your mind today? I'm here to help however I can."""
+# MindBot - Mental Health AI Orchestrator
+ai_therapist = MentalHealthAI()
 
-ai_therapist = MentalHealthAI(os.getenv('OPENAI_API_KEY'))
+# (Placeholder for existing assignment)
 
 @app.route('/favicon.ico')
 def favicon():
@@ -212,6 +102,190 @@ def token_required(f):
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/api/mood-analytics', methods=['GET'])
+@token_required
+def get_mood_analytics(current_user_id):
+    try:
+        # Fetch last 30 days of data
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        
+        # Weekly Mood Trend
+        weekly_trend = db.execute_query(
+            """SELECT DATE_FORMAT(timestamp, '%%Y-%%m-%%d') as date, AVG(mood_score) as avg_score 
+               FROM mood_entries 
+               WHERE user_id = %s AND timestamp >= %s 
+               GROUP BY date 
+               ORDER BY date ASC""",
+            (current_user_id, datetime.now() - timedelta(days=7))
+        )
+        
+        # Emotion Distribution
+        emotion_dist = db.execute_query(
+            """SELECT mood_score, COUNT(*) as count 
+               FROM mood_entries 
+               WHERE user_id = %s 
+               GROUP BY mood_score""",
+            (current_user_id,)
+        )
+        
+        # Positivie vs Negative
+        # Scores 1-2 are negative, 3 is neutral, 4-5 are positive
+        pos_neg_ratio = db.execute_query(
+            """SELECT 
+               SUM(CASE WHEN mood_score >= 4 THEN 1 ELSE 0 END) as positive,
+               SUM(CASE WHEN mood_score <= 2 THEN 1 ELSE 0 END) as negative,
+               SUM(CASE WHEN mood_score = 3 THEN 1 ELSE 0 END) as neutral
+               FROM mood_entries 
+               WHERE user_id = %s""",
+            (current_user_id,)
+        )
+        
+        # Convert Decimal/Date objects to serializable types
+        if weekly_trend:
+            for d in weekly_trend:
+                if d.get('avg_score') is not None: d['avg_score'] = float(d['avg_score'])
+        
+        # Ensure ratio values are serializable
+        ratio = pos_neg_ratio[0] if pos_neg_ratio else {'positive': 0, 'negative': 0, 'neutral': 0}
+        for key in ratio:
+            if ratio[key] is not None: ratio[key] = int(ratio[key])
+
+        return jsonify({
+            'weekly_trend': weekly_trend or [],
+            'emotion_distribution': emotion_dist or [],
+            'ratio': ratio
+        }), 200
+    except Exception as e:
+        print(f"Mood analytics error: {e}")
+        return jsonify({'message': 'Internal server error'}), 500
+
+@app.route('/api/chatbot', methods=['POST'])
+@token_required
+def mental_health_chatbot(current_user_id):
+    try:
+        data = request.get_json()
+        user_message = data.get('message')
+        conversation_history = data.get('history', []) # Added history support
+        
+        if not user_message:
+            return jsonify({'message': 'Message is required'}), 400
+            
+        # Generate empathetic response using upgraded AI logic
+        ai_result = ai_therapist.generate_personalized_response(user_message, conversation_history)
+        response_text = ai_result['response']
+        
+        # Add suggestions if available
+        if ai_result.get('suggested_technique'):
+            tech = ai_result['suggested_technique']
+            response_text += f"\n\n**Suggested Strategy:** {tech['name']}\n{tech['description']}"
+            
+        return jsonify({'response': response_text}), 200
+    except Exception as e:
+        print(f"Chatbot error: {e}")
+        return jsonify({'message': 'Internal server error'}), 500
+
+@app.route('/api/pattern-insights', methods=['GET'])
+@token_required
+def get_pattern_insights(current_user_id):
+    try:
+        # Most common emotion
+        common_emotion = db.execute_query(
+            """SELECT mood_score, COUNT(*) as count 
+               FROM mood_entries 
+               WHERE user_id = %s 
+               GROUP BY mood_score 
+               ORDER BY count DESC LIMIT 1""",
+            (current_user_id,)
+        )
+        
+        # Mood trends by day of week
+        dow_trends = db.execute_query(
+            """SELECT DAYNAME(timestamp) as day, AVG(mood_score) as avg_score 
+               FROM mood_entries 
+               WHERE user_id = %s 
+               GROUP BY day 
+               ORDER BY FIELD(day, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')""",
+            (current_user_id,)
+        )
+        
+        # Positive vs Negative entry percentage
+        stats = db.execute_query(
+            """SELECT 
+               COUNT(*) as total,
+               SUM(CASE WHEN mood_score >= 4 THEN 1 ELSE 0 END) as positive,
+               SUM(CASE WHEN mood_score <= 2 THEN 1 ELSE 0 END) as negative
+               FROM mood_entries 
+               WHERE user_id = %s""",
+            (current_user_id,)
+        )
+        
+        total = int(stats[0]['total']) if stats and stats[0]['total'] > 0 else 1
+        pos_pct = float(stats[0]['positive'] / total * 100) if stats else 0
+        neg_pct = float(stats[0]['negative'] / total * 100) if stats else 0
+        
+        mood_map = {1: 'Sad 😢', 2: 'Down 😕', 3: 'Neutral 😐', 4: 'Good 🙂', 5: 'Happy 😊'}
+        
+        # Convert Decimal objects to serializable types
+        if dow_trends:
+            for d in dow_trends:
+                if d.get('avg_score') is not None: d['avg_score'] = float(d['avg_score'])
+
+        insights = {
+            'common_emotion': mood_map.get(common_emotion[0]['mood_score'], 'N/A') if common_emotion else 'N/A',
+            'day_trends': dow_trends or [],
+            'pos_percentage': round(pos_pct, 1),
+            'neg_percentage': round(neg_pct, 1)
+        }
+        
+        return jsonify(insights), 200
+    except Exception as e:
+        print(f"Pattern insights error: {e}")
+        return jsonify({'message': 'Internal server error'}), 500
+
+@app.route('/api/daily-reflection', methods=['POST'])
+@token_required
+def save_daily_reflection(current_user_id):
+    try:
+        data = request.get_json()
+        smile = data.get('smile')
+        challenge = data.get('challenge')
+        grateful = data.get('grateful')
+        
+        if not all([smile, challenge, grateful]):
+            return jsonify({'message': 'All fields are required'}), 400
+            
+        # Generate summary using OpenAI
+        prompt = f"Based on these daily reflections, provide a short, supportive summary (2 sentences):\n1. What made me smile: {smile}\n2. Today's challenge: {challenge}\n3. Grateful for: {grateful}"
+        
+        summary = "Today was a day of reflection and growth. You found joy in the small things and faced challenges with resilience."
+        
+        if openai.api_key:
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You are a supportive mental wellness assistant."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=100
+                )
+                summary = response.choices[0].message.content.strip()
+            except Exception as ai_e:
+                print(f"Summary AI error: {ai_e}")
+
+        # Store in database
+        db.execute_query(
+            """INSERT INTO daily_reflections (user_id, smile_today, challenge_today, grateful_for, summary) 
+               VALUES (%s, %s, %s, %s, %s)""",
+            (current_user_id, smile, challenge, grateful, summary)
+        )
+        
+        return jsonify({'summary': summary}), 201
+    except Exception as e:
+        print(f"Daily reflection error: {e}")
+        return jsonify({'message': 'Internal server error'}), 500
+
 
 @app.route('/api/register', methods=['POST'])
 def register():

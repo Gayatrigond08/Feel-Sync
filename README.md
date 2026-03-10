@@ -7,39 +7,39 @@ Feel Sync is a beautifully designed, intelligent mental wellness platform built 
 ### 1. **Dynamic Mood Journal & Tracker**
 - **How it works:** Users can log their daily mood (rating from 1-5, which correlate to custom emojis) along with a text entry describing their feelings.
 - The **Scrapbook Journal** displays past logs in a visually stunning horizontal "photo wall" layout. Your entries are playfully styled with washi tape, custom fonts, and cute emoji stickers, acting as a personal memory board.
-- **Data Analytics:** The app uses Chart.js to render a beautiful trend line graph that automatically populates with the user's historical mood data points (matching dates with logged scores), allowing the user to track their emotional wellbeing over time.
+- **Data Analytics:** The app uses Chart.js to render a beautiful trend line graph that automatically populates with the user's historical mood data points.
 
-### 2. **MindBot AI Therapist**
+### 2. **MindBot AI Therapist (Hybrid Engine)**
 - **How it works:** Users engage with a compassionate AI companion that actively listens and responds dynamically to their concerns.
-- **Conversational Awareness:** The backend uses OpenAI's GPT models paired with TextBlob. Natural Language Processing (NLP) runs sentiment analysis on user inputs to detect specific emotions (anxiety, depression, stress, happiness) and adjusts the system prompts behind the scenes before hitting the AI. 
-- **Crisis Detection:** The `ai_chat.py` engine flags severe indicators and, overriding standard chatbot responses, will immediately return emergency helplines and priority crisis intervention text, ensuring user safety.
+- **Hybrid AI Logic:** The system uses a high-performance **Groq (Llama-3.3-70b)** engine as the primary driver for lightning-fast responses, with **OpenAI GPT** as an automatic failover backup.
+- **Conversational Awareness:** The backend uses TextBlob for real-time sentiment analysis to detect specific emotions (anxiety, depression, stress, happiness) and adjusts the system prompts behind the scenes.
+- **Crisis Detection:** The `ai_chat.py` engine flags severe indicators and will immediately provide priority crisis intervention resources and emergency contacts.
 
-### 3. **Interactive Wellness Hub**
-- **Guided Breathing:** Includes an interactive 4-7-8 breathing circle module that automatically drives breathing patterns via CSS animations and JavaScript timing.
-- **Soul Whispers:** A dynamic feature delivering daily comfort—users can click to fetch new calming lyrics, empowering facts, and motivational thoughts drawn directly from the database and randomized on the front-end.
-- **Mini Games:** Elements designed to ground the user during high-stress scenarios.
+### 3. **Deep Intelligence Dashboard**
+- **Mood Ratio:** Visualizes the balance of positive, neutral, and negative days using interactive doughnut charts.
+- **Weekly Trends:** A bar graph showing **Average Mood by Day of Week**, helping users identify if certain days (like Mondays or Fridays) consistently impact their wellbeing.
+- **Stability Insights:** Calculates mood stability and provides textual "Intelligence Insights" based on recent emotional patterns.
 
 ### 4. **Adaptive Botanical Theming**
-- **Guest Experience:** The logged-out landing page features a completely custom, incredibly calming backdrop consisting of hand-painted, soft green vines, creepers, shrubs with small buds, and delicate butterflies—welcoming users immediately with a sense of peace. 
-- **Time-Based Gradients:** Once logged in, the application actively checks the user's local system time and strictly applies contextually appropriate soft pastel gradients:
+- **Serene Environment:** The landing page features a calming backdrop of hand-painted vines, creepers, and delicate butterflies. 
+- **Time-Based Gradients:** Once logged in, the application applies contextually appropriate soft pastel gradients:
   - **Morning**: Soft peachy pink
   - **Afternoon**: Gentle mint green
   - **Evening**: Soft lavender
   - **Night**: Muted pale blue-grey
 
 ### 5. **Robust System Architecture**
-- **Frontend & Backend Separation:** The project is correctly structured with a `frontend` folder containing raw CSS/JS/HTML assets and a `backend` folder housing the Python logic.
-- **Secure Authentication:** The database (`feel_sync_db` running on MySQL) utilizes JSON Web Tokens (JWT) bound to `app.secret_key` alongside secure `pbkdf2` Werkzeug password hashing procedures for safe registration and login authentication via REST APIs.
+- **Frontend & Backend Separation:** Correctly structured with a `frontend` folder for assets and a `backend` folder for logic.
+- **Secure Authentication:** Utilizes JSON Web Tokens (JWT) and secure password hashing via Werkzeug for safe user accounts.
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Frontend:** Vanilla HTML5, CSS3, JavaScript, Chart.js.
+- **Frontend:** HTML5, CSS3, JavaScript, Chart.js.
 - **Backend:** Python + Flask (`app.py`).
-- **Database:** MySQL via `mysql-connector-python`.
-- **Authentication:** PyJWT, Werkzeug.security.
-- **AI / NLP:** OpenAI API, TextBlob.
+- **Database:** MySQL.
+- **AI / NLP:** Groq Cloud API, OpenAI API, TextBlob.
 
 ---
 
@@ -49,7 +49,7 @@ Feel Sync is a beautifully designed, intelligent mental wellness platform built 
 
 1. Python 3.8 or higher
 2. MySQL Server (running on port 3307, or adjustable in `backend/.env`)
-3. An OpenAI API Key
+3. A Groq API Key (Primary) and/or OpenAI API Key (Backup)
 
 ### Installation
 
@@ -59,44 +59,33 @@ Feel Sync is a beautifully designed, intelligent mental wellness platform built 
    cd Feel-Sync
    ```
 
-2. **Setup virtual environment (recommended):**
+2. **Install dependencies:**
    ```bash
    cd backend
-   python -m venv venv
-   
-   # On Windows:
-   venv\Scripts\activate
-   
-   # On macOS/Linux:
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
    pip install -r requirements.txt
    ```
 
-4. **Configure Environment Variables:**
-   Make sure you are in the `backend` folder. Create a `.env` file and add your specific configurations:
+3. **Configure Environment Variables:**
+   Create a `.env` file in the `backend` folder:
    ```env
-   OPENAI_API_KEY=your_openai_api_key_here
-   FLASK_SECRET_KEY=your_secure_flask_key
+   GROQ_API_KEY=your_groq_key_here
+   OPENAI_API_KEY=your_openai_key_here
+   FLASK_SECRET_KEY=your_secure_key
    DB_HOST=localhost
    DB_USER=root
-   DB_PASSWORD=your_mysql_password
+   DB_PASSWORD=your_password
    DB_PORT=3307
    ```
 
-5. **Run the Application:**
-   The application logic is smart. Running it will instantly build all MySQL tables if they are empty or missing, inject sample data, and hook up the frontend.
+4. **Run the Application:**
    ```bash
    python app.py
    ```
 
-6. **Access the App:**
-   Open a web browser and navigate to `http://127.0.0.1:5000/`.
+5. **Access the App:**
+   Open a browser and navigate to `http://127.0.0.1:5000/`.
 
 ---
 
 ## 🤝 Contributing
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page or submit pull requests to help improve Feel Sync.
+Contributions, issues, and feature requests are welcome!

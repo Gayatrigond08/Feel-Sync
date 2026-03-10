@@ -30,10 +30,12 @@
             </div>
 
             <ul class="nav-menu">
-                <li><a href="#home" class="nav-link">Home</a></li>
+                <li><a href="/" class="nav-link">Home</a></li>
                 <li class="user-only"><a href="#mood-tracker" class="nav-link">Mood Tracker</a></li>
                 <li class="user-only"><a href="#journal" class="nav-link">Journal</a></li>
-                <li class="user-only"><a href="#ai-chat" class="nav-link">AI Support</a></li>
+                <li class="user-only"><a href="#dashboard" class="nav-link">Dashboard</a></li>
+                <li class="user-only"><a href="#chatbot" class="nav-link">AI Chatbot</a></li>
+                <li class="user-only"><a href="#daily-reflection" class="nav-link">Reflections</a></li>
                 <li><a href="#resources" class="nav-link">Resources</a></li>
                 <li class="guest-only"><button id="login-btn" class="btn-primary">Login</button></li>
                 <li class="user-only"><button id="logout-btn" class="btn-secondary">Logout</button></li>
@@ -43,6 +45,7 @@
 
     <!-- Hero Section -->
     <section id="home" class="hero section active">
+        <div id="particle-container"></div>
         <!-- Guest View: Simple & Clean -->
         <div class="hero-content guest-only">
             <h1>Your Journey to Wellness</h1>
@@ -52,16 +55,16 @@
 
         <!-- User View: Personalized Dashboard -->
         <div class="hero-content user-only">
-            <h1 id="welcome-title">Hello ✨</h1>
+            <h1 id="welcome-title">Hello</h1>
             <p id="hero-subtitle">How is your heart feeling today?</p>
 
             <div class="quick-actions-grid">
                 <div class="action-card" onclick="window.location.hash='#mood-tracker'">
-                    <div class="action-icon">🌈</div>
+                    <div class="action-icon">☘️</div>
                     <span>How are you?</span>
                 </div>
-                <div class="action-card" onclick="window.location.hash='#ai-chat'">
-                    <div class="action-icon">✨</div>
+                <div class="action-card" onclick="window.location.hash='#chatbot'">
+                    <div class="action-icon">🍃</div>
                     <span>Let's Talk</span>
                 </div>
                 <div class="action-card" onclick="window.location.hash='#resources'">
@@ -77,15 +80,7 @@
             </div>
         </div>
 
-        <!-- Ambient Particles (Subtle User Feature) -->
-        <div class="hero-visual user-only">
-            <div class="floating-elements" id="particle-container">
-                <div class="float-item">🌿</div>
-                <div class="float-item">💚</div>
-                <div class="float-item">🌟</div>
-                <div class="float-item">🌸</div>
-            </div>
-        </div>
+        <!-- User View: Personalized Dashboard -->
     </section>
 
     <!-- Mood Tracker Section -->
@@ -124,27 +119,110 @@
         </div>
     </section>
 
-    <!-- AI Chat Section -->
-    <section id="ai-chat" class="section">
+    <!-- Dashboard Section -->
+    <section id="dashboard" class="section">
         <div class="container">
-            <h2>AI Mental Health Support</h2>
-            <div class="chat-container glass-card">
-                <div class="chat-header">
-                    <i class="fas fa-robot"></i>
-                    <span>MindBot - Your AI Companion</span>
+            <header style="text-align: center; margin-bottom: 2rem;">
+                <h2>Mood Insights & Analytics</h2>
+                <p>Understand your emotional patterns and journey.</p>
+            </header>
+
+            <div class="dashboard-grid">
+                <div class="chart-container glass-card">
+                    <h3>Weekly Mood Trend</h3>
+                    <canvas id="weeklyTrendChart"></canvas>
                 </div>
-                <div id="chat-messages" class="chat-messages">
+                <div class="chart-container glass-card">
+                    <h3>Emotion Distribution</h3>
+                    <canvas id="emotionDistChart"></canvas>
+                </div>
+                <div class="chart-container glass-card">
+                    <h3>Mood Ratio (Pos vs Neg)</h3>
+                    <canvas id="moodRatioChart"></canvas>
+                </div>
+                <div class="chart-container glass-card">
+                    <h3>Mood by Day of Week</h3>
+                    <canvas id="dayTrendsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="insights-card glass-card">
+                <h3>Deep Intelligence Insights</h3>
+                <div class="insight-grid">
+                    <div class="insight-item">
+                        <span class="insight-value" id="common-emotion">-</span>
+                        <span class="insight-label">Dominant Emotion</span>
+                    </div>
+                    <div class="insight-item">
+                        <span class="insight-value" id="pos-percentage">-%</span>
+                        <span class="insight-label">Positive Days</span>
+                    </div>
+                    <div class="insight-item">
+                        <span class="insight-value" id="neg-percentage">-%</span>
+                        <span class="insight-label">Negative Days</span>
+                    </div>
+                    <div class="insight-item">
+                        <span class="insight-value" id="mood-stability">Mid</span>
+                        <span class="insight-label">Mood Stability</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Chatbot Section -->
+    <section id="chatbot" class="section">
+        <div class="container">
+            <header style="text-align: center; margin-bottom: 2rem;">
+                <h2>Mindful AI Chatbot</h2>
+                <p>Your safe space for conversation and support.</p>
+            </header>
+
+            <div class="chat-layout glass-card">
+                <div id="ai-chat-messages" class="chat-messages" style="background: transparent;">
                     <div class="message bot-message">
                         <div class="message-content">
-                            Hello! I'm MindBot, your AI mental health companion. How can I support you today?
+                            Hello! I'm your dedicated mental wellness companion. How are you feeling right now?
                         </div>
                     </div>
                 </div>
-                <div class="chat-input">
-                    <input type="text" id="chat-input" placeholder="Type your message here...">
-                    <button id="send-message" class="btn-send">
+                <div class="chat-input" style="background: rgba(255,255,255,0.1);">
+                    <input type="text" id="ai-chat-input" placeholder="Share your thoughts..."
+                        style="flex: 1; padding: 1rem; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: var(--text-color); outline: none;">
+                    <button id="ai-send-btn" class="btn-primary">
                         <i class="fas fa-paper-plane"></i>
                     </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reflections Section -->
+    <section id="daily-reflection" class="section">
+        <div class="container">
+            <header style="text-align: center; margin-bottom: 2rem;">
+                <h2>Smart Daily Reflection</h2>
+                <p>Take a moment to look back at your day with kindness.</p>
+            </header>
+
+            <div class="reflection-card glass-card">
+                <div class="form-group">
+                    <label>What made you smile today? 😊</label>
+                    <textarea id="smile" placeholder="Tiny or big moments..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>What challenged you today? 🏔️</label>
+                    <textarea id="challenge" placeholder="Obstacles you faced..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>What are you grateful for? ✨</label>
+                    <textarea id="grateful" placeholder="Something you appreciate..."></textarea>
+                </div>
+                <button id="submit-reflection" class="btn-primary" style="width: 100%;">Generate Smart Summary</button>
+
+                <div id="summary-section">
+                    <h3>Your Daily Heart-Map Summary</h3>
+                    <p id="reflection-summary"></p>
                 </div>
             </div>
         </div>
@@ -216,7 +294,8 @@
     <!-- Edit Journal Modal -->
     <div id="edit-journal-modal" class="modal">
         <div class="edit-modal-content glass-card">
-            <span class="close" onclick="document.getElementById('edit-journal-modal').style.display='none'">&times;</span>
+            <span class="close"
+                onclick="document.getElementById('edit-journal-modal').style.display='none'">&times;</span>
             <h2 style="color: #667eea; margin-bottom: 20px;">Edit Journal Entry</h2>
             <form id="edit-journal-form">
                 <input type="hidden" id="edit-entry-id">
@@ -229,8 +308,8 @@
                     <button type="button" class="mood-btn edit-mood-btn" data-mood="5">😊</button>
                 </div>
                 <p style="margin-bottom: 10px; font-weight: 600;">Update your notes</p>
-                <textarea id="edit-mood-notes" placeholder="Update your notes..." 
-                          style="width: 100%; min-height: 120px; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 20px; font-family: inherit; font-size: 1rem; outline: none; transition: border-color 0.3s;"></textarea>
+                <textarea id="edit-mood-notes" placeholder="Update your notes..."
+                    style="width: 100%; min-height: 120px; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 20px; font-family: inherit; font-size: 1rem; outline: none; transition: border-color 0.3s;"></textarea>
                 <button type="submit" class="btn-primary" style="width: 100%;">Save Changes</button>
             </form>
         </div>

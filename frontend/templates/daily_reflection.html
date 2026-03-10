@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Reflection - Feel Sync</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .reflection-card {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 3rem;
+        }
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            font-family: inherit;
+            resize: none;
+            outline: none;
+        }
+
+        #summary-section {
+            display: none;
+            margin-top: 3rem;
+            padding: 2rem;
+            background: rgba(90, 167, 115, 0.2);
+            border-radius: 20px;
+            border-left: 5px solid #5aa773;
+        }
+    </style>
+</head>
+
+<body class="logged-in">
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo" onclick="window.location.href='/'" style="cursor: pointer;">
+                <i class="fas fa-mountain-sun"></i>
+                <span>Feel Sync</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="/chatbot" class="nav-link">AI Support</a></li>
+                <li><a href="/daily-reflection" class="nav-link active">Reflections</a></li>
+                <li><button id="logout-btn" class="btn-secondary">Logout</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container" style="padding-top: 120px; padding-bottom: 60px;">
+        <header style="text-align: center; margin-bottom: 2rem;">
+            <h1>Smart Daily Reflection</h1>
+            <p>Take a moment to look back at your day with kindness.</p>
+        </header>
+
+        <div class="reflection-card glass-card">
+            <div class="form-group">
+                <label>What made you smile today? 😊</label>
+                <textarea id="smile" placeholder="Tiny or big moments..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>What challenged you today? 🏔️</label>
+                <textarea id="challenge" placeholder="Obstacles you faced..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>What are you grateful for? ✨</label>
+                <textarea id="grateful" placeholder="Something you appreciate..."></textarea>
+            </div>
+            <button id="submit-reflection" class="btn-primary" style="width: 100%;">Generate Smart Summary</button>
+
+            <div id="summary-section">
+                <h3>Your Daily Heart-Map Summary</h3>
+                <p id="reflection-summary"></p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const user = JSON.parse(localStorage.getItem('feelsync_user'));
+            if (!user) {
+                window.location.href = '/';
+                return;
+            }
+
+            const submitBtn = document.getElementById('submit-reflection');
+            const summarySection = document.getElementById('summary-section');
+            const summaryText = document.getElementById('reflection-summary');
+
+            submitBtn.addEventListener('click', async () => {
+                const smile = document.getElementById('smile').value;
+                const challenge = document.getElementById('challenge').value;
+                const grateful = document.getElementById('grateful').value;
+
+                if (!smile || !challenge || !grateful) {
+                    alert('Please fill in all the reflections.');
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Generating Summary...';
+
+                try {
+                    const response = await fetch('/api/daily-reflection', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('feelsync_token')}`
+                        },
+                        body: JSON.stringify({ smile, challenge, grateful })
+                    });
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        summaryText.textContent = data.summary;
+                        summarySection.style.display = 'block';
+                        submitBtn.textContent = 'Summary Generated';
+                    } else {
+                        alert(data.message || 'Error occurred');
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Generate Smart Summary';
+                    }
+                } catch (error) {
+                    console.error('Reflection error:', error);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Generate Smart Summary';
+                }
+            });
+
+            // Logout
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                localStorage.removeItem('feelsync_user');
+                localStorage.removeItem('feelsync_token');
+                window.location.href = '/';
+            });
+        });
+    </script>
+</body>
+
+</html>

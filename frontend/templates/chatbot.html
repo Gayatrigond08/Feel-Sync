@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Support Chat - Feel Sync</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .chat-layout {
+            max-width: 900px;
+            margin: 0 auto;
+            height: 70vh;
+            display: flex;
+            flex-direction: column;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+
+<body class="logged-in">
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo" onclick="window.location.href='/'" style="cursor: pointer;">
+                <i class="fas fa-mountain-sun"></i>
+                <span>Feel Sync</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="/chatbot" class="nav-link active">AI Support</a></li>
+                <li><a href="/daily-reflection" class="nav-link">Reflections</a></li>
+                <li><button id="logout-btn" class="btn-secondary">Logout</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container" style="padding-top: 120px; padding-bottom: 60px;">
+        <header style="text-align: center; margin-bottom: 2rem;">
+            <h1>Mindful AI Chatbot</h1>
+            <p>Your safe space for conversation and support.</p>
+        </header>
+
+        <div class="chat-layout glass-card">
+            <div id="chat-messages" class="chat-messages" style="background: transparent;">
+                <div class="message bot-message">
+                    <div class="message-content">
+                        Hello! I'm your dedicated mental wellness companion. How are you feeling right now?
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input" style="background: rgba(255,255,255,0.1);">
+                <input type="text" id="chat-input-field" placeholder="Share your thoughts..."
+                    style="flex: 1; padding: 1rem; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: var(--text-color); outline: none;">
+                <button id="send-btn" class="btn-primary">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const user = JSON.parse(localStorage.getItem('feelsync_user'));
+            if (!user) {
+                window.location.href = '/';
+                return;
+            }
+
+            const chatMessages = document.getElementById('chat-messages');
+            const chatInput = document.getElementById('chat-input-field');
+            const sendBtn = document.getElementById('send-btn');
+
+            async function sendMessage() {
+                const message = chatInput.value.trim();
+                if (!message) return;
+
+                // User message
+                const userDiv = document.createElement('div');
+                userDiv.className = 'message user-message';
+                userDiv.innerHTML = `<div class="message-content">${message}</div>`;
+                chatMessages.appendChild(userDiv);
+                chatInput.value = '';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                // Typing indicator
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'message bot-message';
+                typingDiv.innerHTML = `<div class="message-content">Thinking...</div>`;
+                chatMessages.appendChild(typingDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                try {
+                    const response = await fetch('/api/chatbot', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('feelsync_token')}`
+                        },
+                        body: JSON.stringify({ message })
+                    });
+                    const data = await response.json();
+
+                    typingDiv.remove();
+                    const botDiv = document.createElement('div');
+                    botDiv.className = 'message bot-message';
+                    botDiv.innerHTML = `<div class="message-content">${data.response.replace(/\n/g, '<br>')}</div>`;
+                    chatMessages.appendChild(botDiv);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                } catch (error) {
+                    typingDiv.remove();
+                    console.error('Chat error:', error);
+                }
+            }
+
+            sendBtn.addEventListener('click', sendMessage);
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+
+            // Logout
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                localStorage.removeItem('feelsync_user');
+                localStorage.removeItem('feelsync_token');
+                window.location.href = '/';
+            });
+        });
+    </script>
+</body>
+
+</html>

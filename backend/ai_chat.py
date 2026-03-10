@@ -3,6 +3,7 @@ import os
 from textblob import TextBlob
 import json
 import random
+import requests
 from datetime import datetime
 
 class MentalHealthAI:
@@ -12,9 +13,11 @@ class MentalHealthAI:
     """
     
     def __init__(self, api_key=None):
-        self.api_key = api_key or os.getenv('OPENAI_API_KEY')
-        if self.api_key:
-            openai.api_key = self.api_key
+        self.openai_api_key = api_key or os.getenv('OPENAI_API_KEY')
+        self.groq_api_key = os.getenv('GROQ_API_KEY')
+        
+        if self.openai_api_key:
+            openai.api_key = self.openai_api_key
         
         self.crisis_keywords = [
             'suicide', 'kill myself', 'end it all', 'hurt myself', 'self harm',
@@ -175,78 +178,121 @@ Please reach out to one of these resources right now. They're available 24/7 and
         return self.therapeutic_techniques[suggested_technique]
     
     def generate_personalized_response(self, user_message, user_history=None):
-        """Generate personalized AI response based on user input and history"""
+        """Generate personalized AI response prioritizing Groq (free/higher quota) then OpenAI"""
         
-        # Analyze the message
         sentiment_analysis = self.analyze_sentiment(user_message)
         crisis_detection = self.detect_crisis(user_message)
         categories = self.categorize_mental_health_concern(user_message)
         
-        # Handle crisis situations immediately
-        if crisis_detection['is_crisis']:
-            return {
-                'response': self.get_crisis_response(),
-                'analysis': {
-                    'sentiment': sentiment_analysis,
-                    'crisis': crisis_detection,
-                    'categories': categories
-                },
-                'suggested_technique': None,
-                'priority': 'crisis'
-            }
-        
-        # Try to use OpenAI API if available
-        if self.api_key and self.api_key != "your_openai_api_key_here":
+        # 1. Try Groq (Usually has a better free tier/quota)
+        if self.groq_api_key:
             try:
-                ai_response = self.get_openai_response(user_message, user_history, sentiment_analysis, categories)
-                if ai_response:
+                print("DEBUG: Attempting Groq API...")
+                response = self.get_groq_response(user_message, user_history, sentiment_analysis, categories, crisis_detection)
+                if response:
                     return {
-                        'response': ai_response,
-                        'analysis': {
-                            'sentiment': sentiment_analysis,
-                            'crisis': crisis_detection,
-                            'categories': categories
-                        },
+                        'response': response,
+                        'analysis': {'sentiment': sentiment_analysis, 'crisis': crisis_detection, 'categories': categories},
                         'suggested_technique': self.suggest_technique(categories),
-                        'priority': 'normal'
+                        'priority': 'crisis' if crisis_detection['is_crisis'] else 'normal'
                     }
             except Exception as e:
-                print(f"OpenAI API error: {e}")
+                print(f"DEBUG: Groq API Failed: {e}")
+
+        # 2. Try OpenAI (Backup)
+        if self.openai_api_key:
+            try:
+                print("DEBUG: Attempting OpenAI API...")
+                response = self.get_openai_response(user_message, user_history, sentiment_analysis, categories, crisis_detection)
+                if response:
+                    return {
+                        'response': response,
+                        'analysis': {'sentiment': sentiment_analysis, 'crisis': crisis_detection, 'categories': categories},
+                        'suggested_technique': self.suggest_technique(categories),
+                        'priority': 'crisis' if crisis_detection['is_crisis'] else 'normal'
+                    }
+            except Exception as e:
+                print(f"DEBUG: OpenAI API Failed: {e}")
         
-        # Fallback to rule-based responses
-        fallback_response = self.get_fallback_response(user_message, sentiment_analysis, categories)
-        
+        # Final emergency response
         return {
-            'response': fallback_response,
-            'analysis': {
-                'sentiment': sentiment_analysis,
-                'crisis': crisis_detection,
-                'categories': categories
-            },
+            'response': "I'm here to listen, but I'm having a hard time connecting to my full intelligence right now. How are you feeling in this moment?",
+            'analysis': {'sentiment': sentiment_analysis, 'crisis': crisis_detection, 'categories': categories},
             'suggested_technique': self.suggest_technique(categories),
             'priority': 'normal'
         }
-    
-    def get_openai_response(self, user_message, user_history, sentiment_analysis, categories):
+
+    def _format_ai_success(self, response, sentiment, crisis, categories):
+        return {
+            'response': response,
+            'analysis': {'sentiment': sentiment, 'crisis': crisis, 'categories': categories},
+            'suggested_technique': self.suggest_technique(categories),
+            'priority': 'normal'
+        }
+
+    def get_groq_response(self, user_message, user_history, sentiment_analysis, categories):
+        """Call Groq API for lightning fast, empathetic responses"""
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.groq_api_key}",
+            "Content-Type": "application/json"
+        }
+        
+    def get_groq_response(self, user_message, user_history, sentiment_analysis, categories, crisis_detection=None):
+        """Call Groq API for lightning fast, empathetic responses"""
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.groq_api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        system_prompt = self._get_system_prompt(sentiment_analysis, categories, crisis_detection)
+        messages = [{"role": "system", "content": system_prompt}]
+        if user_history:
+            messages.extend(user_history[-4:])
+        messages.append({"role": "user", "content": user_message})
+
+        data = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": messages,
+            "temperature": 0.7,
+            "max_tokens": 500
+        }
+        
+        response = requests.post(url, headers=headers, json=data, timeout=10)
+        if response.status_code == 200:
+            return response.json()['choices'][0]['message']['content'].strip()
+        else:
+            print(f"DEBUG: Groq API Status Code: {response.status_code}")
+            return None
+
+    def _get_system_prompt(self, sentiment_analysis, categories, crisis_detection=None):
+        crisis_info = ""
+        if crisis_detection and crisis_detection.get('is_crisis'):
+            crisis_info = f"\nCRITICAL SAFETY ALERT: Crisis keywords detected ({', '.join(crisis_detection['keywords'])}). Provide immediate crisis resources and empathy."
+        
+        return f"""You are MindBot, a world-class AI mental health companion. 
+        Your goal is to provide deep, empathetic, and nuanced support.
+        
+        Context:
+        - Sentiment: {sentiment_analysis['sentiment']}
+        - Concerns: {', '.join(categories) if categories else 'General wellbeing'}{crisis_info}
+        
+        Voice Guidelines:
+        1. Empathy First: Validate feelings ("It makes sense you feel that way") before offering advice.
+        2. Depth: Don't just give platitudes. Explore the 'why' with the user.
+        3. Therapeutic Presence: Use techniques similar to person-centered therapy.
+        4. Safety: If a crisis is detected, you MUST include international crisis hotline information (988 in US) and encourage immediate professional help.
+        5. Clarity: Use warm, simple language but maintain a professional boundary.
+        
+        Constraints: No medical diagnosis, no medication advice, no self-disclosure.
+        Keep responses to 1-2 supportive paragraphs."""
+
+    def get_openai_response(self, user_message, user_history, sentiment_analysis, categories, crisis_detection=None):
         """Get response from OpenAI GPT model"""
         try:
             # Build context-aware system prompt
-            system_prompt = f"""You are MindBot, a compassionate AI mental health companion. 
-
-Current user sentiment: {sentiment_analysis['sentiment']}
-Detected concerns: {', '.join(categories) if categories else 'general support'}
-
-Guidelines:
-1. Be empathetic, warm, and non-judgmental
-2. Provide emotional support and validation
-3. Suggest practical coping strategies when appropriate
-4. Encourage professional help for serious concerns
-5. Keep responses concise but meaningful (2-3 paragraphs max)
-6. Never diagnose or provide medical advice
-7. Ask follow-up questions to understand better
-8. Use emojis sparingly but appropriately
-
-Respond as a caring mental health companion would."""
+            system_prompt = self._get_system_prompt(sentiment_analysis, categories, crisis_detection)
 
             messages = [{"role": "system", "content": system_prompt}]
             
@@ -258,7 +304,7 @@ Respond as a caring mental health companion would."""
             messages.append({"role": "user", "content": user_message})
             
             response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=messages,
                 max_tokens=250,
                 temperature=0.7,
@@ -269,7 +315,9 @@ Respond as a caring mental health companion would."""
             return response.choices[0].message.content.strip()
             
         except Exception as e:
-            print(f"OpenAI API error: {e}")
+            print(f"DEBUG: OpenAI API Call Failed!")
+            print(f"Error Type: {type(e).__name__}")
+            print(f"Error Message: {str(e)}")
             return None
     
     def get_fallback_response(self, user_message, sentiment_analysis, categories):

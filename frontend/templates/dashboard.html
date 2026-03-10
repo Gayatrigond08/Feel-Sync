@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood Analytics - Feel Sync</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            min-height: 400px;
+        }
+
+        .insights-card {
+            grid-column: span 2;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .insight-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .insight-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+        }
+
+        .insight-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #5aa773;
+            display: block;
+        }
+
+        .insight-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .insight-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body class="logged-in">
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo" onclick="window.location.href='/'" style="cursor: pointer;">
+                <i class="fas fa-mountain-sun"></i>
+                <span>Feel Sync</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/dashboard" class="nav-link active">Dashboard</a></li>
+                <li><a href="/chatbot" class="nav-link">AI Support</a></li>
+                <li><a href="/daily-reflection" class="nav-link">Reflections</a></li>
+                <li><button id="logout-btn" class="btn-secondary">Logout</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container" style="padding-top: 120px; padding-bottom: 60px;">
+        <header style="text-align: center; margin-bottom: 3rem;">
+            <h1>Mood Insights & Analytics</h1>
+            <p>Understand your emotional patterns and journey.</p>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="chart-container glass-card">
+                <h3>Weekly Mood Trend</h3>
+                <canvas id="weeklyTrendChart"></canvas>
+            </div>
+            <div class="chart-container glass-card">
+                <h3>Emotion Distribution</h3>
+                <canvas id="emotionDistChart"></canvas>
+            </div>
+            <div class="chart-container glass-card">
+                <h3>Mood Ratio (Pos vs Neg)</h3>
+                <canvas id="moodRatioChart"></canvas>
+            </div>
+            <div class="chart-container glass-card">
+                <h3>Mood by Day of Week</h3>
+                <canvas id="dayTrendsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="insights-card glass-card">
+            <h3>Deep Intelligence Insights</h3>
+            <div class="insight-grid">
+                <div class="insight-item">
+                    <span class="insight-value" id="common-emotion">-</span>
+                    <span class="insight-label">Dominant Emotion</span>
+                </div>
+                <div class="insight-item">
+                    <span class="insight-value" id="pos-percentage">-%</span>
+                    <span class="insight-label">Positive Days</span>
+                </div>
+                <div class="insight-item">
+                    <span class="insight-value" id="neg-percentage">-%</span>
+                    <span class="insight-label">Negative Days</span>
+                </div>
+                <div class="insight-item">
+                    <span class="insight-value" id="mood-stability">Mid</span>
+                    <span class="insight-label">Mood Stability</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+
+</html>
