@@ -557,6 +557,42 @@ body:not(.logged-in) .hero {
     }
 }
 
+#particle-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.particle {
+    position: absolute;
+    opacity: 0.15;
+    filter: blur(1.5px);
+    animation: floatParticle 15s infinite ease-in-out;
+    user-select: none;
+    will-change: transform;
+}
+
+@keyframes floatParticle {
+
+    0%,
+    100% {
+        transform: translateY(0) translateX(0) rotate(0deg);
+    }
+
+    33% {
+        transform: translateY(-40px) translateX(25px) rotate(15deg);
+    }
+
+    66% {
+        transform: translateY(-20px) translateX(-20px) rotate(-10deg);
+    }
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;

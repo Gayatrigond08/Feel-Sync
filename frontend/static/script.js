@@ -338,11 +338,11 @@ class FeelSyncApp {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('feelsync_token')}`
                 },
                 body: JSON.stringify({
                     mood_score: parseInt(this.selectedMood),
-                    notes: notes,
-                    user_id: this.currentUser?.id || 1 // Default user for demo
+                    notes: notes
                 }),
             });
 
@@ -615,7 +615,11 @@ class FeelSyncApp {
 
     async loadUserMoodData() {
         try {
-            const response = await fetch(`/api/mood/${this.currentUser?.id || 1}`);
+            const response = await fetch('/api/mood', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('feelsync_token')}`
+                }
+            });
             const data = await response.json();
 
             if (response.ok) {
@@ -711,7 +715,10 @@ class FeelSyncApp {
 
         try {
             const response = await fetch(`/api/mood/${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('feelsync_token')}`
+                }
             });
 
             if (response.ok) {
@@ -759,6 +766,7 @@ class FeelSyncApp {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('feelsync_token')}`
                 },
                 body: JSON.stringify({
                     mood_score: parseInt(mood),
@@ -1237,6 +1245,7 @@ class FeelSyncApp {
             welcomeTitle.textContent = `Hello, ${this.currentUser.username}`;
             heroSubtitle.textContent = "How is your heart feeling today? Let's take a small step together.";
             this.updateHomeWhisper();
+            this.createHeroParticles();
         }
     }
 
@@ -1263,7 +1272,25 @@ class FeelSyncApp {
         const container = document.getElementById('particle-container');
         if (!container) return;
 
-        container.innerHTML = ''; // Clear existing - no more floating emojis
+        container.innerHTML = '';
+        if (!this.currentUser) return;
+
+        const emojis = ['☘️', '🍃', '🧘', '✨', '🌸', '☁️', '☀️', '🌊', '🌿', '🍄'];
+        const count = 25;
+
+        for (let i = 0; i < count; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.top = Math.random() * 100 + 'vh';
+            p.style.fontSize = (Math.random() * 20 + 20) + 'px';
+            p.style.animationDelay = (Math.random() * 10) + 's';
+            p.style.animationDuration = (Math.random() * 15 + 10) + 's';
+
+            container.appendChild(p);
+        }
     }
 }
 
