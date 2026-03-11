@@ -74,6 +74,18 @@ class DatabaseManager:
 
 db = DatabaseManager()
 
+def log_activity(user_id, activity_type, activity_data=None):
+    """Helper to log user activities into the database"""
+    try:
+        data_json = json.dumps(activity_data) if activity_data else None
+        db.execute_query(
+            "INSERT INTO user_activity (user_id, activity_type, activity_data, timestamp) VALUES (%s, %s, %s, %s)",
+            (user_id, activity_type, data_json, datetime.now())
+        )
+    except Exception as e:
+        print(f"Failed to log activity: {e}")
+
+
 # MindBot - Mental Health AI Orchestrator
 ai_therapist = MentalHealthAI()
 
@@ -102,6 +114,18 @@ def token_required(f):
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
+@app.route('/chatbot')
+def chatbot():
+    return render_template('chatbot.html')
+
+@app.route('/daily-reflection')
+def daily_reflection():
+    return render_template('daily_reflection.html')
 
 @app.route('/api/mood-analytics', methods=['GET'])
 @token_required
@@ -190,6 +214,10 @@ def mental_health_chatbot(current_user_id):
             "INSERT INTO chat_sessions (user_id, message_type, content, timestamp) VALUES (%s, %s, %s, %s)",
             (current_user_id, 'bot', response_text, datetime.now())
         )
+        
+        # Log activity
+        log_activity(current_user_id, 'ai_chat', {'sentiment': ai_result.get('analysis', {}).get('sentiment')})
+
             
         return jsonify({'response': response_text}), 200
     except Exception as e:
@@ -276,6 +304,10 @@ def save_daily_reflection(current_user_id):
             (current_user_id, smile, challenge, grateful, summary)
         )
         
+        # Log activity
+        log_activity(current_user_id, 'reflection_logged')
+
+        
         return jsonify({'summary': summary}), 201
     except Exception as e:
         print(f"Daily reflection error: {e}")
@@ -310,6 +342,15 @@ def register():
         )
         
         if user_id:
+            # Initialize default user preferences
+            db.execute_query(
+                "INSERT INTO user_preferences (user_id, theme, language) VALUES (%s, %s, %s)",
+                (user_id, 'light', 'en')
+            )
+            
+            # Log activity
+            log_activity(user_id, 'account_created')
+            
             return jsonify({'message': 'User created successfully', 'user_id': user_id}), 201
         else:
             return jsonify({'message': 'Failed to create user'}), 500
@@ -343,6 +384,9 @@ def login():
             'exp': datetime.now(timezone.utc) + timedelta(days=7)
         }, app.config['SECRET_KEY'], algorithm='HS256')
         
+        # Log activity
+        log_activity(user[0]['id'], 'login')
+        
         return jsonify({
             'message': 'Login successful',
             'token': token,
@@ -374,6 +418,8 @@ def save_mood(current_user_id):
         )
         
         if mood_id:
+            # Log activity
+            log_activity(current_user_id, 'mood_logged', {'score': mood_score})
             return jsonify({'message': 'Mood entry saved', 'mood_id': mood_id}), 201
         else:
             return jsonify({'message': 'Failed to save mood entry'}), 500
@@ -487,6 +533,95 @@ def get_resources():
         
     except Exception as e:
         print(f"Resources error: {e}")
+        return jsonify({'message': 'Internal server error'}), 500
+
+@app.route('/api/preferences', methods=['GET'])
+@token_required
+def get_preferences(current_user_id):
+    try:
+        prefs = db.execute_query(
+            "SELECT notification_enabled, reminder_time, theme, language FROM user_preferences WHERE user_id = %s",
+            (current_user_id,)
+        )
+        
+        if not prefs:
+            # Create default if somehow missing
+            db.execute_query(
+                "INSERT IGNORE INTO user_preferences (user_id) VALUES (%s)",
+                (current_user_id,)
+            )
+            prefs = [{'notification_enabled': 1, 'reminder_time': '09:00:00', 'theme': 'light', 'language': 'en'}]
+            
+        # Convert time object to string
+        if prefs[0]['reminder_time']:
+            prefs[0]['reminder_time'] = str(prefs[0]['reminder_time'])
+            
+        return jsonify(prefs[0]), 200
+    except Exception as e:
+        print(f"Preferences GET error: {e}")
+        return jsonify({'message': 'Internal server error'}), 500
+
+@app.route('/api/preferences', methods=['PUT'])
+@token_required
+def update_preferences(current_user_id):
+    try:
+        data = request.get_json()
+        theme = data.get('theme')
+        language = data.get('language')
+        notif = data.get('notification_enabled')
+        reminder = data.get('reminder_time')
+        
+        # Build dynamic update query
+        updates = []
+        params = []
+        
+        if theme:
+            updates.append("theme = %s")
+            params.append(theme)
+        if language:
+            updates.append("language = %s")
+            params.append(language)
+        if notif is not None:
+            updates.append("notification_enabled = %s")
+            params.append(notif)
+        if reminder:
+            updates.append("reminder_time = %s")
+            params.append(reminder)
+            
+        if not updates:
+            return jsonify({'message': 'No fields to update'}), 400
+            
+        params.append(current_user_id)
+        query = f"UPDATE user_preferences SET {', '.join(updates)} WHERE user_id = %s"
+        
+        db.execute_query(query, params)
+        return jsonify({'message': 'Preferences updated successfully'}), 200
+    except Exception as e:
+        print(f"Preferences PUT error: {e}")
+        return jsonify({'message': 'Internal server error'}), 500
+
+@app.route('/api/activity', methods=['GET'])
+@token_required
+def get_user_activity(current_user_id):
+    try:
+        activities = db.execute_query(
+            "SELECT activity_type, activity_data, timestamp FROM user_activity WHERE user_id = %s ORDER BY timestamp DESC LIMIT 10",
+            (current_user_id,)
+        )
+        
+        # Ensure timestamp is string for JSON
+        if activities:
+            for activity in activities:
+                activity['timestamp'] = activity['timestamp'].strftime('%Y-%m-%d %H:%M:%S')
+                if activity['activity_data']:
+                    try:
+                        activity['activity_data'] = json.loads(activity['activity_data'])
+                    except:
+                        pass
+        
+        return jsonify({'activities': activities or []}), 200
+    except Exception as e:
+        print(f"Activity query error: {e}")
         return jsonify({'message': 'Internal server error'}), 500
 
 if __name__ == '__main__':

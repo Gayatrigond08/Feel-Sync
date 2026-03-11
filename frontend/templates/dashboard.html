@@ -134,6 +134,49 @@
                 </div>
             </div>
         </div>
+
+        <!-- Recent Activity Section -->
+        <div class="glass-card" style="margin-top: 2rem; padding: 2rem;">
+            <h3>Recent Activity</h3>
+            <div id="activity-list" style="margin-top: 1rem;">
+                <!-- Activity items will be injected here -->
+                <p style="opacity: 0.6;">No recent activity found.</p>
+            </div>
+        </div>
+
+        <!-- Preferences Section -->
+        <div class="glass-card" style="margin-top: 2rem; padding: 2rem;" id="preferences-section">
+            <h3>Account Preferences</h3>
+            <form id="preferences-form" style="margin-top: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <div class="form-group">
+                    <label>Theme Preference</label>
+                    <select id="pref-theme" class="form-input">
+                        <option value="light">Botanical Light</option>
+                        <option value="dark">Botanical Dark</option>
+                        <option value="pastel">Soft Pastel</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Preferred Language</label>
+                    <select id="pref-lang" class="form-input">
+                        <option value="en">English</option>
+                        <option value="hi">Hindi</option>
+                        <option value="es">Spanish</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Daily Reminder Time</label>
+                    <input type="time" id="pref-reminder" class="form-input">
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1.5rem;">
+                    <input type="checkbox" id="pref-notif" style="width: 20px; height: 20px;">
+                    <label for="pref-notif">Enable Notifications</label>
+                </div>
+                <div style="grid-column: span 2; text-align: right;">
+                    <button type="submit" class="btn-primary">Save Preferences</button>
+                </div>
+            </form>
+        </div>
     </main>
 
     <script src="{{ url_for('static', filename='dashboard.js') }}"></script>

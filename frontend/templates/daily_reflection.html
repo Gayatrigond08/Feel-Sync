@@ -105,6 +105,29 @@
             const summarySection = document.getElementById('summary-section');
             const summaryText = document.getElementById('reflection-summary');
 
+            async function fetchPreferences() {
+                try {
+                    const res = await fetch('/api/preferences', {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('feelsync_token')}` }
+                    });
+                    const data = await res.json();
+                    if (data && data.theme) {
+                        applyTheme(data.theme);
+                    }
+                } catch (err) {
+                    console.error("Prefs error:", err);
+                }
+            }
+
+            function applyTheme(theme) {
+                document.body.classList.remove('theme-morning', 'theme-afternoon', 'theme-evening', 'theme-night', 'theme-dark', 'theme-pastel', 'theme-light');
+                if (theme === 'dark' || theme === 'pastel' || theme === 'light') {
+                    document.body.classList.add(`theme-${theme}`);
+                }
+            }
+
+            fetchPreferences();
+
             submitBtn.addEventListener('click', async () => {
                 const smile = document.getElementById('smile').value;
                 const challenge = document.getElementById('challenge').value;

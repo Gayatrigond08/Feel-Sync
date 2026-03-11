@@ -23,6 +23,142 @@ class FeelSyncApp {
         this.loadResources();
         this.createHeroParticles();
         this.updateHomeWhisper();
+        this.fetchUserPreferences();
+    }
+
+    async fetchUserPreferences() {
+        if (!this.currentUser) return;
+        try {
+            const res = await fetch('/api/preferences', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('feelsync_token')}` }
+            });
+            const data = await res.json();
+            if (data && data.theme) {
+                this.userPreferences = data;
+                this.applyTheme(data.theme);
+                this.translateApp(data.language);
+            }
+        } catch (error) {
+            console.error('Error fetching preferences:', error);
+            this.updateThemeByTime();
+        }
+    }
+
+    translateApp(lang) {
+        if (!lang) return;
+        const translations = {
+            en: {
+                welcome: "Hello",
+                hero_subtitle: "How is your heart feeling today? Let's take a small step together.",
+                guest_title: "Your Journey to Wellness",
+                guest_p: "Embrace the peace within. Every step you take matters.",
+                get_started: "Get Started",
+                how_are_you: "How are you?",
+                lets_talk: "Let's Talk",
+                breath_work: "Breath Work",
+                whisper_label: "Whisper for You",
+                mood_tracker_h2: "Daily Mood Tracker",
+                mood_tracker_h3: "How are you feeling today?",
+                save_mood: "Save Mood Entry",
+                journal_h2: "Your Wellness Journal",
+                resources_h2: "Wellness Resources",
+                login: "Login",
+                logout: "Logout",
+                signup: "Sign Up",
+                home: "Home"
+            },
+            hi: {
+                welcome: "नमस्ते",
+                hero_subtitle: "आज आपका दिल कैसा महसूस कर रहा है? चलो साथ में एक छोटा कदम उठाते हैं।",
+                guest_title: "कल्याण के लिए आपकी यात्रा",
+                guest_p: "भीतर की शांति को अपनाएं। आपके द्वारा उठाया गया हर कदम मायने रखता है।",
+                get_started: "शुरू करें",
+                how_are_you: "आप कैसे हैं?",
+                lets_talk: "चलो बात करते हैं",
+                breath_work: "सांस का व्यायाम",
+                whisper_label: "आपके लिए एक फुसफुसाहट",
+                mood_tracker_h2: "दैनिक मनोदशा ट्रैकर",
+                mood_tracker_h3: "आज आप कैसा महसूस कर रहे हैं?",
+                save_mood: "मनोदशा प्रविष्टि सहेजें",
+                journal_h2: "आपकी कल्याण पत्रिका",
+                resources_h2: "कल्याण संसाधन",
+                login: "लॉगिन",
+                logout: "लॉगआउट",
+                signup: "साइन अप करें",
+                home: "होम"
+            },
+            es: {
+                welcome: "Hola",
+                hero_subtitle: "¿Cómo se siente tu corazón hoy?",
+                guest_title: "Tu Camino al Bienestar",
+                guest_p: "Acepta la paz interior.",
+                get_started: "Empezar",
+                how_are_you: "¿Cómo estás?",
+                lets_talk: "Hablemos",
+                breath_work: "Respiración",
+                whisper_label: "Un susurro para ti",
+                mood_tracker_h2: "Seguimiento Diario",
+                mood_tracker_h3: "¿Cómo te sientes hoy?",
+                save_mood: "Guardar estado de ánimo",
+                journal_h2: "Tu Diario",
+                resources_h2: "Recursos",
+                login: "Iniciar sesión",
+                logout: "Cerrar sesión",
+                signup: "Registrarse",
+                home: "Inicio"
+            }
+        };
+
+        const t = translations[lang] || translations.en;
+        
+        const welcome = document.getElementById('welcome-title');
+        if (welcome && this.currentUser) welcome.textContent = `${t.welcome}, ${this.currentUser.username}`;
+        
+        const subtitle = document.getElementById('hero-subtitle');
+        if (subtitle) subtitle.textContent = t.hero_subtitle;
+
+        // Guest view
+        const guestTitle = document.querySelector('.hero-content.guest-only h1');
+        if (guestTitle) guestTitle.textContent = t.guest_title;
+        const guestP = document.querySelector('.hero-content.guest-only p');
+        if (guestP) guestP.textContent = t.guest_p;
+        const getStarted = document.getElementById('get-started-btn');
+        if (getStarted) getStarted.textContent = t.get_started;
+
+        // Naval links & buttons
+        const navLinks = document.querySelectorAll('.nav-link');
+        if (navLinks[0]) navLinks[0].textContent = t.home;
+        const loginBtn = document.getElementById('login-btn');
+        if (loginBtn && !this.currentUser) loginBtn.textContent = t.login;
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) logoutBtn.textContent = t.logout;
+
+        // Quick actions
+        const actions = document.querySelectorAll('.action-card span');
+        if (actions[0]) actions[0].textContent = t.how_are_you;
+        if (actions[1]) actions[1].textContent = t.lets_talk;
+        if (actions[2]) actions[2].textContent = t.breath_work;
+
+        // Sections
+        const moodH2 = document.querySelector('#mood-tracker h2');
+        if (moodH2) moodH2.textContent = t.mood_tracker_h2;
+        const moodH3 = document.querySelector('.mood-input h3');
+        if (moodH3) moodH3.textContent = t.mood_tracker_h3;
+        const saveMoodBtn = document.getElementById('save-mood');
+        if (saveMoodBtn) saveMoodBtn.textContent = t.save_mood;
+        const journalH2 = document.querySelector('#journal h2');
+        if (journalH2) journalH2.textContent = t.journal_h2;
+        const resourcesH2 = document.querySelector('#resources h2');
+        if (resourcesH2) resourcesH2.textContent = t.resources_h2;
+    }
+
+    applyTheme(theme) {
+        document.body.classList.remove('theme-morning', 'theme-afternoon', 'theme-evening', 'theme-night', 'theme-dark', 'theme-pastel', 'theme-light');
+        if (theme === 'dark' || theme === 'pastel' || theme === 'light') {
+            document.body.classList.add(`theme-${theme}`);
+        } else {
+            this.updateThemeByTime();
+        }
     }
 
     setupEventListeners() {
@@ -273,6 +409,7 @@ class FeelSyncApp {
                 this.hideModal('login-modal');
                 this.updateUIForLoggedInUser();
                 this.loadUserMoodData();
+                this.fetchUserPreferences();
                 this.showNotification(`Welcome back, ${data.user.username}! ✨`, 'success');
                 // Let them stay on home to see the new dashboard
                 if (window.location.hash !== '#home' && window.location.hash) {
@@ -865,7 +1002,10 @@ class FeelSyncApp {
     logout() {
         this.currentUser = null;
         localStorage.removeItem('feelsync_user');
+        localStorage.removeItem('feelsync_token');
         document.body.classList.remove('logged-in');
+        document.body.classList.remove('theme-dark', 'theme-pastel', 'theme-light');
+        this.updateThemeByTime();
 
         const loginBtn = document.getElementById('login-btn');
         if (loginBtn) {
