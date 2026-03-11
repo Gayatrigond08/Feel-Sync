@@ -166,7 +166,7 @@ def mental_health_chatbot(current_user_id):
     try:
         data = request.get_json()
         user_message = data.get('message')
-        conversation_history = data.get('history', []) # Added history support
+        conversation_history = data.get('history', [])
         
         if not user_message:
             return jsonify({'message': 'Message is required'}), 400
@@ -179,6 +179,17 @@ def mental_health_chatbot(current_user_id):
         if ai_result.get('suggested_technique'):
             tech = ai_result['suggested_technique']
             response_text += f"\n\n**Suggested Strategy:** {tech['name']}\n{tech['description']}"
+            
+        # Save to database
+        db.execute_query(
+            "INSERT INTO chat_sessions (user_id, message_type, content, timestamp) VALUES (%s, %s, %s, %s)",
+            (current_user_id, 'user', user_message, datetime.now())
+        )
+        
+        db.execute_query(
+            "INSERT INTO chat_sessions (user_id, message_type, content, timestamp) VALUES (%s, %s, %s, %s)",
+            (current_user_id, 'bot', response_text, datetime.now())
+        )
             
         return jsonify({'response': response_text}), 200
     except Exception as e:
@@ -255,24 +266,8 @@ def save_daily_reflection(current_user_id):
         if not all([smile, challenge, grateful]):
             return jsonify({'message': 'All fields are required'}), 400
             
-        # Generate summary using OpenAI
-        prompt = f"Based on these daily reflections, provide a short, supportive summary (2 sentences):\n1. What made me smile: {smile}\n2. Today's challenge: {challenge}\n3. Grateful for: {grateful}"
-        
-        summary = "Today was a day of reflection and growth. You found joy in the small things and faced challenges with resilience."
-        
-        if openai.api_key:
-            try:
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are a supportive mental wellness assistant."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=100
-                )
-                summary = response.choices[0].message.content.strip()
-            except Exception as ai_e:
-                print(f"Summary AI error: {ai_e}")
+        # Generate summary using enhanced AI orchestrator
+        summary = ai_therapist.summarize_reflections(smile, challenge, grateful)
 
         # Store in database
         db.execute_query(
@@ -363,10 +358,10 @@ def login():
         return jsonify({'message': 'Internal server error'}), 500
 
 @app.route('/api/mood', methods=['POST'])
-def save_mood():
+@token_required
+def save_mood(current_user_id):
     try:
         data = request.get_json()
-        user_id = data.get('user_id', 1)  # Default for demo
         mood_score = data.get('mood_score')
         notes = data.get('notes', '')
         
@@ -375,7 +370,7 @@ def save_mood():
         
         mood_id = db.execute_query(
             "INSERT INTO mood_entries (user_id, mood_score, notes, timestamp) VALUES (%s, %s, %s, %s)",
-            (user_id, mood_score, notes, datetime.now())
+            (current_user_id, mood_score, notes, datetime.now())
         )
         
         if mood_id:
@@ -387,15 +382,16 @@ def save_mood():
         print(f"Mood save error: {e}")
         return jsonify({'message': 'Internal server error'}), 500
 
-@app.route('/api/mood/<int:user_id>', methods=['GET'])
-def get_mood_history(user_id):
+@app.route('/api/mood', methods=['GET'])
+@token_required
+def get_mood_history(current_user_id):
     try:
         # Get last 30 days of mood entries
         thirty_days_ago = datetime.now() - timedelta(days=30)
         
         mood_entries = db.execute_query(
             "SELECT id, mood_score, notes, timestamp FROM mood_entries WHERE user_id = %s AND timestamp >= %s ORDER BY timestamp ASC",
-            (user_id, thirty_days_ago)
+            (current_user_id, thirty_days_ago)
         )
         
         return jsonify({'mood_entries': mood_entries or []}), 200
@@ -405,12 +401,12 @@ def get_mood_history(user_id):
         return jsonify({'message': 'Internal server error'}), 500
 
 @app.route('/api/mood/<int:mood_id>', methods=['DELETE'])
-def delete_mood(mood_id):
+@token_required
+def delete_mood(current_user_id, mood_id):
     try:
-        # For demo, we don't check user ownership, but in production we should
         result = db.execute_query(
-            "DELETE FROM mood_entries WHERE id = %s",
-            (mood_id,)
+            "DELETE FROM mood_entries WHERE id = %s AND user_id = %s",
+            (mood_id, current_user_id)
         )
         return jsonify({'message': 'Mood entry deleted successfully'}), 200
     except Exception as e:
@@ -418,7 +414,8 @@ def delete_mood(mood_id):
         return jsonify({'message': 'Internal server error'}), 500
 
 @app.route('/api/mood/<int:mood_id>', methods=['PUT'])
-def update_mood(mood_id):
+@token_required
+def update_mood(current_user_id, mood_id):
     try:
         data = request.get_json()
         mood_score = data.get('mood_score')
@@ -428,76 +425,33 @@ def update_mood(mood_id):
             return jsonify({'message': 'Valid mood score (1-5) is required'}), 400
             
         db.execute_query(
-            "UPDATE mood_entries SET mood_score = %s, notes = %s WHERE id = %s",
-            (mood_score, notes, mood_id)
+            "UPDATE mood_entries SET mood_score = %s, notes = %s WHERE id = %s AND user_id = %s",
+            (mood_score, notes, mood_id, current_user_id)
         )
         return jsonify({'message': 'Mood entry updated successfully'}), 200
     except Exception as e:
         print(f"Mood update error: {e}")
         return jsonify({'message': 'Internal server error'}), 500
 
-@app.route('/api/chat', methods=['POST'])
-def chat_with_ai():
-    try:
-        data = request.get_json()
-        user_message = data.get('message')
-        user_id = data.get('user_id', 1)  # Default for demo
-        
-        if not user_message:
-            return jsonify({'message': 'Message is required'}), 400
-        
-        # Get recent conversation history
-        conversation_history = db.execute_query(
-            "SELECT message_type, content FROM chat_sessions WHERE user_id = %s ORDER BY timestamp DESC LIMIT 10",
-            (user_id,)
-        )
-        
-        # Format history for AI
-        formatted_history = []
-        if conversation_history:
-            for msg in reversed(conversation_history):
-                role = "user" if msg['message_type'] == 'user' else "assistant"
-                formatted_history.append({"role": role, "content": msg['content']})
-        
-        # Generate AI response
-        ai_result = ai_therapist.generate_personalized_response(user_message, formatted_history)
-        ai_response = ai_result['response']
-        
-        # Save conversation to database
-        db.execute_query(
-            "INSERT INTO chat_sessions (user_id, message_type, content, timestamp) VALUES (%s, %s, %s, %s)",
-            (user_id, 'user', user_message, datetime.now())
-        )
-        
-        db.execute_query(
-            "INSERT INTO chat_sessions (user_id, message_type, content, timestamp) VALUES (%s, %s, %s, %s)",
-            (user_id, 'bot', ai_response, datetime.now())
-        )
-        
-        return jsonify({'response': ai_response}), 200
-        
-    except Exception as e:
-        print(f"Chat error: {e}")
-        return jsonify({'message': 'Internal server error'}), 500
-
-@app.route('/api/analytics/<int:user_id>', methods=['GET'])
-def get_user_analytics(user_id):
+@app.route('/api/analytics', methods=['GET'])
+@token_required
+def get_user_analytics(current_user_id):
     try:
         # Get mood analytics
         mood_stats = db.execute_query(
             "SELECT AVG(mood_score) as avg_mood, COUNT(*) as total_entries FROM mood_entries WHERE user_id = %s AND timestamp >= %s",
-            (user_id, datetime.now() - timedelta(days=30))
+            (current_user_id, datetime.now() - timedelta(days=30))
         )
         
         # Get mood trend (last 7 days vs previous 7 days)
         last_week = db.execute_query(
             "SELECT AVG(mood_score) as avg_mood FROM mood_entries WHERE user_id = %s AND timestamp >= %s",
-            (user_id, datetime.now() - timedelta(days=7))
+            (current_user_id, datetime.now() - timedelta(days=7))
         )
         
         prev_week = db.execute_query(
             "SELECT AVG(mood_score) as avg_mood FROM mood_entries WHERE user_id = %s AND timestamp BETWEEN %s AND %s",
-            (user_id, datetime.now() - timedelta(days=14), datetime.now() - timedelta(days=7))
+            (current_user_id, datetime.now() - timedelta(days=14), datetime.now() - timedelta(days=7))
         )
         
         analytics = {

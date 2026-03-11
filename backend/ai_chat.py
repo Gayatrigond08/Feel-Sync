@@ -222,6 +222,51 @@ Please reach out to one of these resources right now. They're available 24/7 and
             'priority': 'normal'
         }
 
+    def summarize_reflections(self, smile, challenge, grateful):
+        """Generate a supportive summary of daily reflections using Groq or OpenAI"""
+        prompt = f"Based on these daily reflections, provide a short, supportive summary (2 sentences):\n1. What made me smile: {smile}\n2. Today's challenge: {challenge}\n3. Grateful for: {grateful}"
+        
+        # 1. Try Groq
+        if self.groq_api_key:
+            try:
+                url = "https://api.groq.com/openai/v1/chat/completions"
+                headers = {
+                    "Authorization": f"Bearer {self.groq_api_key}",
+                    "Content-Type": "application/json"
+                }
+                data = {
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [
+                        {"role": "system", "content": "You are a supportive mental wellness assistant. Provide a brief (2-sentence) encouraging summary based on the user's reflections."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.7,
+                    "max_tokens": 150
+                }
+                response = requests.post(url, headers=headers, json=data, timeout=10)
+                if response.status_code == 200:
+                    return response.json()['choices'][0]['message']['content'].strip()
+            except Exception as e:
+                print(f"DEBUG: Groq Summary Failed: {e}")
+
+        # 2. Try OpenAI
+        if self.openai_api_key:
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are a supportive mental wellness assistant."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=150
+                )
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                print(f"DEBUG: OpenAI Summary Failed: {e}")
+
+        # 3. Dynamic Fallback (if AI fails)
+        return f"Today you found joy in '{smile}' and practiced gratitude for '{grateful}'. Even with the challenge of '{challenge}', you're moving forward with resilience."
+
     def _format_ai_success(self, response, sentiment, crisis, categories):
         return {
             'response': response,

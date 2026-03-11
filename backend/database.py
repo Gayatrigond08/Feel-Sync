@@ -133,6 +133,21 @@ class DatabaseSetup:
             )
             """
             
+            # Daily reflections table
+            daily_reflections_table = """
+            CREATE TABLE IF NOT EXISTS daily_reflections (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                smile_today TEXT,
+                challenge_today TEXT,
+                grateful_for TEXT,
+                summary TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                INDEX idx_user_timestamp (user_id, timestamp)
+            )
+            """
+            
             # Execute table creation queries
             tables = [
                 ("users", users_table),
@@ -140,7 +155,8 @@ class DatabaseSetup:
                 ("chat_sessions", chat_sessions_table),
                 ("user_preferences", user_preferences_table),
                 ("wellness_resources", wellness_resources_table),
-                ("user_activity", user_activity_table)
+                ("user_activity", user_activity_table),
+                ("daily_reflections", daily_reflections_table)
             ]
             
             # Drop wellness_resources to fix ENUM to VARCHAR transition
