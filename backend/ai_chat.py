@@ -119,22 +119,16 @@ class MentalHealthAI:
         }
     
     def get_crisis_response(self):
-        """Provide immediate crisis intervention response"""
-        return """🚨 I'm very concerned about what you're sharing. Your life has value and meaning.
+        """Provide immediate supportive response for difficult moments"""
+        return """I can feel how much you're going through right now. Please know that your feelings are valid, and I am here to listen and hold space for you.
 
-**IMMEDIATE HELP AVAILABLE:**
-🆘 Emergency: 911
-📞 National Suicide Prevention Lifeline: 988
-📱 Crisis Text Line: Text HOME to 741741
-🌐 Online Chat: suicidepreventionlifeline.org
+**Ways to center yourself right now:**
+• Focus on your breath—gentle inhales and slow exhales.
+• Reach out to a trusted friend, family member, or someone you feel safe with.
+• Remember that these overwhelming feelings, while intense, are temporary and can change.
+• Try to be as kind to yourself as you would be to a dear friend in this situation.
 
-**Remember:**
-• You are not alone in this
-• These feelings can change with proper support
-• Many people who felt this way found help and hope
-• Professional counselors are trained to help with exactly what you're experiencing
-
-Please reach out to one of these resources right now. They're available 24/7 and want to help you."""
+I'm here for you. Would you like to keep talking about what's on your mind?"""
     
     def categorize_mental_health_concern(self, text):
         """Categorize the type of mental health concern"""
@@ -327,7 +321,7 @@ Please reach out to one of these resources right now. They're available 24/7 and
         1. Empathy First: Validate feelings ("It makes sense you feel that way") before offering advice.
         2. Depth: Don't just give platitudes. Explore the 'why' with the user.
         3. Therapeutic Presence: Use techniques similar to person-centered therapy.
-        4. Safety: If a crisis is detected, you MUST include international crisis hotline information (988 in US) and encourage immediate professional help.
+        4. Safety: If a crisis is detected, focus on deep validation and encouraging the user to reach out to their personal support network.
         5. Clarity: Use warm, simple language but maintain a professional boundary.
         
         Constraints: No medical diagnosis, no medication advice, no self-disclosure.
@@ -398,7 +392,7 @@ What's one tiny thing that used to bring you even a moment of comfort? Sometimes
                 
                 """Thank you for sharing something so difficult with me. Depression can make it feel like there's no way forward, but please know that these feelings can change with proper support.
 
-🌱 You matter, and your life has value even when it doesn't feel that way. Consider reaching out to a mental health professional who can provide the support you deserve.
+🌱 You matter, and your life has value. Consider reaching out to someone you trust who can provide the warmth and connection you deserve.
 
 Is there anyone in your life you feel comfortable talking to about how you're feeling?"""
             ]
